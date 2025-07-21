@@ -1,0 +1,23 @@
+{
+  "name": "class-review-website-testing",
+  "version": "1.0.0",
+  "description": "Course review website for CS-546 WN final project.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jharring17/class-review-website.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jharring17/class-review-website/issues"
+  },
+  "homepage": "https://github.com/jharring17/class-review-website#readme",
+  "dependencies": {
+    "mongodb": "^6.17.0"
+  }
+}
