@@ -1,4 +1,4 @@
-import { courses } from '../config/mongoCollections';
+import { courses } from '../config/mongoCollections.js';
 import { ObjectId } from 'mongodb';
 import * as validation from '../utils/validation.js'
 
@@ -63,7 +63,12 @@ const createCourse = async (
 const getAllCourses = async () => {
 	const coursesCollection = await courses();
 	const courseList = await coursesCollection.find({}).toArray();
-	return courseList;
+	return courseList.map(course => {
+        return {
+            ...course,
+            _id: course._id.toString()
+        };
+    });
 };
 
 /**
@@ -81,10 +86,23 @@ const getCourseById = async (courseId) => {
 	// Find the course
 	const coursesCollection = await courses();
 	const courseById = await coursesCollection.findOne({ _id: new ObjectId(courseId) })
+	if (!courseById) throw `Error: no course found with ID ${courseId}.`
 	courseById._id = courseById._id.toString()
 	return courseById
 };
 
+/**
+ * Updates a course in the courses collection.
+ * @param {objectId} adminId The id of the admin used to build the course.
+ * @param {string} courseId A unique identifier applied to a course (ex: cs546)
+ * @param {string} courseName The name of the course.
+ * @param {string} courseDescription The description of the course.
+ * @param {Date} meetingTime A date when the course meets.
+ * @param {string} imgLink An image link used for a picture in the course.
+ * @param {string} professor The name of the professor teaching the course. 
+ * @returns {object} Object containing the new course
+ * @throws Will throw if the object cannot be created or if a field is invalid.
+ */
 const updateCourse = async (
 	adminCreated,
 	courseId,
@@ -94,8 +112,40 @@ const updateCourse = async (
 	imgLink,
 	professor
 ) => {
+	const coursesCollection = await courses();
+	
 	// validate the inputs
-	// courseRating & comments will be initialized as nothing
+	adminCreated = validation.validateString("adminId", adminCreated)
+	if (!ObjectId.isValid(adminId)) throw `Error: ${adminCreated} is not a valid ID.`
+	courseId = validation.validateCourseId(courseId)
+	const exists = await coursesCollection.findOne({ courseId: courseId });
+	if (exists) throw `Error: cannot have duplicate courseIds.`
+	courseName = validation.validateCourseName(courseName)
+	courseDescription = validation.validateCourseDescription(courseDescription)
+	//todo: validate meetingTime
+	imgLink = await validation.validateImgLink(imgLink)
+	professor = validation.validateProfessor(professor)
+
+	// Create the updated course object (no update allowed for reviews or comments)
+	const updatedCourse = {
+		adminId: adminCreated,
+		courseId: courseId,
+		courseName: courseName,
+		courseDescription: courseDescription,
+		meetingTime: meetingTime,
+		imgLink: imgLink,
+		professor: professor,
+	};
+	
+	// Update the course in the collection
+	const updatedInfo = await coursesCollection.findOneAndUpdate(
+		{ _id: new ObjectId(courseId) },
+		{ $set: updatedCourse },
+		{ returnDocument: 'after' }
+	);
+	if (!updatedInfo.value) throw `Error: could not update course with ID ${courseId}.`
+	updatedInfo.value._id = updatedInfo.value._id.toString();
+	return updatedInfo.value;
 };
 
 /**
