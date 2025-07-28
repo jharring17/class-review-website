@@ -1,9 +1,21 @@
 import { courses } from '../config/mongoCollections';
 import { ObjectId } from 'mongodb';
-// import validation functions
+import * as validation from '../utils/validation.js'
 
+/**
+ * Creates a new course in the courses collection.
+ * @param {objectId} adminId The id of the admin used to build the course.
+ * @param {string} courseId A unique identifier applied to a course (ex: cs546)
+ * @param {string} courseName The name of the course.
+ * @param {string} courseDescription The description of the course.
+ * @param {Date} meetingTime A date when the course meets.
+ * @param {string} imgLink An image link used for a picture in the course.
+ * @param {string} professor The name of the professor teaching the course. 
+ * @returns {object} Object containing the new course
+ * @throws Will throw if the object cannot be created or if a field is invalid.
+ */
 const createCourse = async (
-	adminCreated,
+	adminId,
 	courseId,
 	courseName,
 	courseDescription,
@@ -11,8 +23,28 @@ const createCourse = async (
 	imgLink,
 	professor
 ) => {
-	// validate the inputs
-	// courseRating & comments will be initialized as nothing
+	// validate adminId
+	adminId = validation.validateString("adminId", adminId)
+	if (!ObjectId.isValid(adminId)) throw `Error: ${adminId} is not a valid ID.`
+
+	// validate courseId
+	courseId = validation.validateCourseId(courseId)
+	const coursesCollection = await courses();
+	const exists = await coursesCollection.findOne({ courseId: courseId });
+	if (exists) throw `Error: cannot have duplicate courseIds.`
+
+	// validate courseName
+	courseName = validation.validateCourseName(courseName)
+
+	// validate courseDescription
+	courseDescription = validation.validateCourseDescription(courseDescription)
+
+	// validate meetingTime
+
+	// validate imgLink
+	imgLink = await validation.validateImgLink(imgLink)
+
+	// validate professor
 };
 
 /**
@@ -34,7 +66,15 @@ const getAllCourses = async () => {
  * @throws Will throw an error if the ID is invalid or not in collection.
  */
 const getCourseById = async (courseId) => {
-	// validate the course ID
+	// Validate courseId is a valid string and objectId
+	courseId = validation.validateString("courseId", courseId)
+	if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`
+	
+	// Find the course
+	const coursesCollection = await courses();
+	const courseById = await coursesCollection.findOne({ _id: new ObjectId(courseId) })
+	courseById._id = courseById._id.toString()
+	return courseById
 };
 
 const updateCourse = async (
@@ -58,7 +98,17 @@ const updateCourse = async (
  * @throws Will throw an error if the ID is invalid or not in collection.
  */
 const removeCourse = async (courseId) => {
-	// validate the course ID
+	// Validate courseId is a valid string and objectId
+	courseId = validation.validateString("courseId", courseId)
+	if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`
+
+	// Find the course
+	const coursesCollection = await courses();
+	const deletedInfo = await coursesCollection.deleteOne({ _id: new ObjectId(courseId) })
+	
+	// Check if it was delete successfully
+	if (deletedInfo.deletedCount !== 1) throw `Error: failed to delete record for ${courseId}`
+	return { _id: courseId, deleted: true}
 };
 
 export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
