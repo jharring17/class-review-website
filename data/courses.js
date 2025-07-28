@@ -119,6 +119,4 @@ const removeCourse = async (courseId) => {
 	return { _id: courseId, deleted: true}
 };
 
-// todo: return sorted lists for courses
-
 export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
