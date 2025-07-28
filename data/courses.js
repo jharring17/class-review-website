@@ -23,28 +23,36 @@ const createCourse = async (
 	imgLink,
 	professor
 ) => {
-	// validate adminId
+	// Get courses collection
+	const coursesCollection = await courses();
+
+	// Validation
 	adminId = validation.validateString("adminId", adminId)
 	if (!ObjectId.isValid(adminId)) throw `Error: ${adminId} is not a valid ID.`
-
-	// validate courseId
 	courseId = validation.validateCourseId(courseId)
-	const coursesCollection = await courses();
 	const exists = await coursesCollection.findOne({ courseId: courseId });
 	if (exists) throw `Error: cannot have duplicate courseIds.`
-
-	// validate courseName
 	courseName = validation.validateCourseName(courseName)
-
-	// validate courseDescription
 	courseDescription = validation.validateCourseDescription(courseDescription)
-
-	// validate meetingTime
-
-	// validate imgLink
+	//todo: validate meetingTime
 	imgLink = await validation.validateImgLink(imgLink)
+	professor = validation.validateProfessor(professor)
 
-	// validate professor
+	// Add the new course
+	newCourse = {
+		adminId: adminId,
+		courseId: courseId,
+		courseName: courseName,
+		courseDescription: courseDescription,
+		meetingTime: meetingTime,
+		imgLink: imgLink,
+		professor: professor,
+		courseRating: 0,
+		comments: []
+	}
+	const insertInfo = await coursesCollection.insertOne(newCourse)
+	if (!insertInfo.acknowledged || !insertInfo.insertedId) throw 'Could not create course.';
+	return await getCourseById(insertInfo.insertedId.toString());
 };
 
 /**
@@ -111,6 +119,6 @@ const removeCourse = async (courseId) => {
 	return { _id: courseId, deleted: true}
 };
 
-export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
+// todo: return sorted lists for courses
 
-//testing for Shan
+export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };

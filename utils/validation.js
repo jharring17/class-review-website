@@ -71,3 +71,15 @@ export async function validateImgLink(imgLink) {
 	}
 	return imgLink;
 }
+
+/**
+ * Validates a professor name
+ * @param {string} professor The name of the professor to be validated
+ * @throws Will throw an error if the professor name is improperly formatted.
+ */
+export function validateProfessor(professor) {
+	professor = validateString("professor", professor)
+	if (professor.length < 5 || professor.length > 50) throw `Error: name must be 5 to 50 characters.`
+	if (!(/^[A-Za-z'-]+\s[A-Za-z'-]+$/.test(professor))) throw `Error: name must be of the format <firstname> <lastname>.`
+	return professor
+}
