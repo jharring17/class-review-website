@@ -62,5 +62,3 @@ const removeCourse = async (courseId) => {
 };
 
 export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
-
-//testing for Shan
