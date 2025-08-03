@@ -11,6 +11,9 @@ const createComment = async (userId, courseId, text) => {
     userId: new ObjectId(userId),
     courseId: new ObjectId(courseId),
     text,
+    likes:[], //added extra feature for likes/dislikes and ratings - SS
+    dislikes: [],
+    rating: null,
     createdAt: new Date()
   };
 
@@ -61,6 +64,40 @@ const updateComment = async (commentId, newText) => {
   return updated.value;
 };
 
+//like a comment feature - SS
+const likeComment = async (commentId, userId) => {
+  commentId = validateString('commentId', commentId);
+  userId = validateString('userId', userId);
+  const commentsCollection = await comments();
+  const updated = await commentsCollection.findOneAndUpdate(
+    {_id: new ObjectId(commentId)},
+    {
+      $addToSet: {likes: userId},
+      $pull: {dislikes: userId}
+    },
+    {returnDocument: 'after'}
+  );
+  if (!updated.value) throw 'Could not like a comment.';
+  return updated.value;
+};
+
+//dislike a comment feature - SS
+const dislikeComment = async (commentId, userId) => {
+  commentId = validateString('commentId', commentId);
+  userId = validateString('userId', userId);
+  const commentsCollection = await comments();
+  const updated = await commentsCollections.findOneAndUpdate(
+    {_id: new ObjectId(commentId)},
+    {
+      $addToSet: {dislikes: userId},
+      $pull: {likes: userId}
+    },
+    {returnDocument: 'after'}
+  );
+  if (!updated.value) throw 'Could not dislike comment.';
+  return updated.value;
+}
+
 const deleteComment = async (commentId) => {
   commentId = validateString('commentId', commentId);
   const commentsCollection = await comments();
@@ -76,5 +113,7 @@ export {
   getCommentsByUser,
   getCommentsByCourse,
   updateComment,
-  deleteComment
+  deleteComment,
+  likeComment, //new export for likes - SS
+  dislikeComment //new export for dislikes - SS
 };

@@ -1,5 +1,6 @@
-import { courses } from '../config/mongoCollections';
+import { courses } from '../config/mongoCollections.js';
 import { ObjectId } from 'mongodb';
+import { comments } from '../config/mongoCollections.js'; //added for stats - SS
 // import validation functions
 
 const createCourse = async (
@@ -13,6 +14,22 @@ const createCourse = async (
 ) => {
 	// validate the inputs
 	// courseRating & comments will be initialized as nothing
+	const newCourse = {
+		adminCreated,
+		courseId,
+		courseName,
+		courseDescription,
+		meetingTime,
+		imgLink,
+		professor,
+		createdAt: new Date(),
+		updatedAt: new Date()
+	};
+
+	const coursesCollection = await courses();
+	const insertInfo = await coursesCollection.insertOne(newCourse);
+	if (!insertInfo.insertedId) throw 'Could not create course';
+	return await coursesCollection.findOne({_id: insertInfo.insertedId});
 };
 
 /**
@@ -61,4 +78,32 @@ const removeCourse = async (courseId) => {
 	// validate the course ID
 };
 
-export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
+//added most reviewed courses - SS
+const getMostReviewedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
+		{$sort: {reviewCount: -1}}
+	]).toArray();
+};
+
+//added least reviewed courses - SS
+const getLeastReviewedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
+		{$sort: {reviewCount: 1}}
+	]).toArray();
+};
+
+//added lowest rated courses - SS
+const getLowestRatedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$match: {rating: {$exists: true}}},
+		{$group: {_id: "$courseId", avgRating: {$avg: "$rating"}}},
+		{$sort: {avgRating: 1}}
+	]).toArray();
+};
+
+export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse, getMostReviewedCourses, getLeastReviewedCourses, getLowestRatedCourses }; //added new exports for getting most reviewed, least reviewed, and lowest rated courses - SS
