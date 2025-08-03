@@ -114,6 +114,6 @@ export {
   getCommentsByCourse,
   updateComment,
   deleteComment,
-  likeComment, //new export for likes - SS
-  dislikeComment //new export for dislikes - SS
+  likeComment, //new export for likes function - SS
+  dislikeComment //new export for dislikes function - SS
 };

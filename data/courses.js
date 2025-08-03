@@ -106,4 +106,4 @@ const getLowestRatedCourses = async () => {
 	]).toArray();
 };
 
-export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse, getMostReviewedCourses, getLeastReviewedCourses, getLowestRatedCourses }; //added new exports for getting most reviewed, least reviewed, and lowest rated courses - SS
+export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse, getMostReviewedCourses, getLeastReviewedCourses, getLowestRatedCourses }; //added new exports for getting most reviewed, least reviewed, and lowest rated courses functions - SS

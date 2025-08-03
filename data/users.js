@@ -127,6 +127,6 @@ export {
     getUserById,
     removeUser,
     updateUser,
-    addViewedClass //new export for viewed class - SS
+    addViewedClass //new export for viewed class function - SS
 };
 

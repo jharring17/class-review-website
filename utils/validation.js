@@ -57,7 +57,7 @@ export const validUrl = (url, fieldName) => {
 	}
 
 	const trimmedUrl = url.trim();
-	
+
 	try {
 		const urlObject = new URL(trimmedUrl);
 
