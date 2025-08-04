@@ -15,5 +15,4 @@ const getCollectionFn = (collection) => {
 
 // Note: You will need to change the code below to have the collection required by the assignment!
 export const users = getCollectionFn('users');
-export const courses = getCollectionFn('courses'); //renamed 'classes' to 'courses' - SS
-export const comments = getCollectionFn('comments'); //added export for comments.js - SS
+export const courses = getCollectionFn('courses');
