@@ -156,7 +156,8 @@ const updateCourse = async (
  * @throws Will throw an error if the ID is invalid or not in collection.
  */
 const removeCourse = async (courseId) => {
-	// Validate courseId is a valid string and objectId
+	// validate the course ID
+		// Validate courseId is a valid string and objectId
 	courseId = validation.validateString("courseId", courseId)
 	if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`
 
@@ -169,4 +170,32 @@ const removeCourse = async (courseId) => {
 	return { _id: courseId, deleted: true}
 };
 
-export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse };
+//added most reviewed courses - SS
+const getMostReviewedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
+		{$sort: {reviewCount: -1}}
+	]).toArray();
+};
+
+//added least reviewed courses - SS
+const getLeastReviewedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
+		{$sort: {reviewCount: 1}}
+	]).toArray();
+};
+
+//added lowest rated courses - SS
+const getLowestRatedCourses = async () => {
+	const commentsCollection = await comments();
+	return await commentsCollection.aggregate([
+		{$match: {rating: {$exists: true}}},
+		{$group: {_id: "$courseId", avgRating: {$avg: "$rating"}}},
+		{$sort: {avgRating: 1}}
+	]).toArray();
+};
+
+export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse, getMostReviewedCourses, getLeastReviewedCourses, getLowestRatedCourses }; //added new exports for getting most reviewed, least reviewed, and lowest rated courses functions - SS

@@ -99,11 +99,34 @@ const updateUser = async (userId, fieldsToUpdate) => {
     return await getUserById(userId);
 };
 
+//added last viewed class for limit of 3 - SS
+const addViewedClass = async (userId, courseId) => {
+    if (!ObjectId.isValid(userId)) throw 'Invalid user ID';
+    if (!ObjectId.isValid(courseId)) throw 'Invalid course ID';
+    const usersCollection = await users();
+    const updateInfo = await usersCollection.updateOne(
+        {_id: new ObjectId(userId)},
+        {
+            $push: {
+                lastViewed: {
+                    $each: [courseId],
+                    $position: 0,
+                    $slice: 3
+                }
+            },
+            $set: {updatedAt: new Date()}
+        }
+    );
+    if (updateInfo.modifiedCount === 0) throw 'Could not update last viewed classes';
+    return await getUserById(userId);
+};
+
 export {
     createUser,
     getAllUsers,
     getUserById,
     removeUser,
-    updateUser
+    updateUser,
+    addViewedClass //new export for viewed class function - SS
 };
 

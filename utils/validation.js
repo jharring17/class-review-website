@@ -83,7 +83,7 @@ export function validateProfessor(professor) {
 	if (!(/^[A-Za-z'-]+\s[A-Za-z'-]+$/.test(professor))) throw `Error: name must be of the format <firstname> <lastname>.`
 	return professor
 }
-=======
+/*
  * @param arr - the array of strings
  * @param fieldName - the name of the field to validate against
  * @returns {*}
