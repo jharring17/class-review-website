@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { validateString } from '../utils/validation.js';
-import { comments } from '../config/mongoCollections.js';
+import { courses } from '../config/mongoCollections.js';
 
 const createComment = async (userId, courseId, text) => {
   userId = validateString('userId', userId);

@@ -15,15 +15,16 @@ export function validateString(name, value) {
 }
 
 /**
- * Validates a courseId.
+ * Validates a courseCode.
  * The value must be a valid string, 6 characters in length, of the format aa-123
  * @param {string} courseId The courseId to be validated.
  * @throws Will throw if course ID is invalid.
  */
-export function validateCourseId(courseId) {
+export function validateCourseCode(courseId) {
 	courseId = validateString("courseId", courseId)
-	if (courseId.length !== 6) throw `Error: ${courseId} must be 6 characters.`
-  	if(!(/^[A-Za-z]{2}-\d{3}$/.test(courseId))) throw `Error: ${courseId} is invalid.`
+	if (courseId.length < 6 || courseId.length > 7) throw `Error: ${courseId} must be 6 to 7 characters.`
+  	if(!(/^[A-Za-z]{2,3}-\d{3}$/.test(courseId))) throw `Error: ${courseId} is invalid.`
+	courseId = courseId.toLowerCase()
 	return courseId
 }
 
@@ -36,6 +37,7 @@ export function validateCourseId(courseId) {
 export function validateCourseName(courseName) {
 	courseName = validateString("courseName", courseName)
 	if (courseName.length > 20) throw `Error: course name cannot exceed 20 character.`
+	if (!(/^[A-Za-z\s]+$/.test(courseName))) throw `Error: course name can only contain letters and spaces.`
 	return courseName
 }
 
@@ -46,9 +48,9 @@ export function validateCourseName(courseName) {
  * @throws Will throw an error if description is invalid.
  */
 export function validateCourseDescription(courseDescription) {
-	courseName = validateString("courseDescription", courseDescription)
-	if (courseName.length > 200) throw `Error: course description cannot exceed 20 character.`
-	return courseName
+	courseDescription = validateString("courseDescription", courseDescription)
+	if (courseDescription.length > 200) throw `Error: course description cannot exceed 200 character.`
+	return courseDescription
 }
 
 /**
@@ -62,7 +64,7 @@ export async function validateImgLink(imgLink) {
 	// validate img format
 	if (!imgLink.match(/^https?:\/\/.+\.(jpg|jpeg|png)$/))
 		throw `Error: ${imgLink} is not a valid link.`;
-	
+
 	// attempt to get the img
 	try {
 		const result = await axios.get(imgLink)
