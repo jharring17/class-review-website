@@ -14,6 +14,17 @@ import * as validation from '../utils/validation.js'
  * @returns {object} Object containing the new course
  * @throws Will throw if the object cannot be created or if a field is invalid.
  */
+
+//added helper function to update course comments directly - SS
+const updateCourseComments = async (courseId, newComment) => {
+	const coursesCollection = await courses();
+	const updatedInfo = await coursesCollection.updateOne(
+		{_id: new ObjectId(courseId)},
+		{$push: {comments: newComment}}
+	);
+	if (updatedInfo.modifiedCount === 0) throw `Could not add comment to course ${courseId}`;
+};
+
 const createCourse = async (
 	adminId,
 	courseId,
@@ -39,7 +50,7 @@ const createCourse = async (
 	professor = validation.validateProfessor(professor)
 
 	// Add the new course
-	newCourse = {
+	const newCourse = {
 		adminId: adminId,
 		courseId: courseId,
 		courseName: courseName,
@@ -47,7 +58,9 @@ const createCourse = async (
 		meetingTime: meetingTime,
 		imgLink: imgLink,
 		professor: professor,
-		courseRating: 0,
+		courseRating: null,
+		ratingCount: 0,
+		ratings: [],
 		comments: []
 	}
 	const insertInfo = await coursesCollection.insertOne(newCourse)
@@ -116,7 +129,7 @@ const updateCourse = async (
 	
 	// validate the inputs
 	adminCreated = validation.validateString("adminId", adminCreated)
-	if (!ObjectId.isValid(adminId)) throw `Error: ${adminCreated} is not a valid ID.`
+	if (!ObjectId.isValid(adminCreated)) throw `Error: ${adminCreated} is not a valid ID.`
 	courseId = validation.validateCourseId(courseId)
 	const exists = await coursesCollection.findOne({ courseId: courseId });
 	if (exists) throw `Error: cannot have duplicate courseIds.`
@@ -170,32 +183,414 @@ const removeCourse = async (courseId) => {
 	return { _id: courseId, deleted: true}
 };
 
-//added most reviewed courses - SS
+//COURSE REVIEWS AND RATINGS
+
+//Updated most reviewed courses - SS
 const getMostReviewedCourses = async () => {
-	const commentsCollection = await comments();
-	return await commentsCollection.aggregate([
-		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
-		{$sort: {reviewCount: -1}}
-	]).toArray();
+  const coursesCollection = await courses();
+  return await coursesCollection.aggregate([
+    { $project: { courseId: 1, reviewCount: { $size: { $ifNull: ["$comments", []] } } } },
+    {
+      $group: {
+        _id: null,
+        maxReviewCount: { $max: "$reviewCount" },
+        items: { $push: { courseId: "$courseId", reviewCount: "$reviewCount" } }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        results: {
+          $filter: {
+            input: "$items",
+            as: "it",
+            cond: { $eq: ["$$it.reviewCount", "$maxReviewCount"] }
+          }
+        }
+      }
+    },
+    { $unwind: "$results" },
+    { $replaceRoot: { newRoot: "$results" } }
+  ]).toArray();
 };
 
-//added least reviewed courses - SS
+//Updated least reviewed courses - SS
 const getLeastReviewedCourses = async () => {
-	const commentsCollection = await comments();
-	return await commentsCollection.aggregate([
-		{$group: {_id: "$courseId", reviewCount: {$sum: 1}}},
-		{$sort: {reviewCount: 1}}
-	]).toArray();
+  const coursesCollection = await courses();
+  return await coursesCollection.aggregate([
+    { $project: { courseId: 1, reviewCount: { $size: { $ifNull: ["$comments", []] } } } },
+    {
+      $group: {
+        _id: null,
+        minReviewCount: { $min: "$reviewCount" },
+        items: { $push: { courseId: "$courseId", reviewCount: "$reviewCount" } }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        results: {
+          $filter: {
+            input: "$items",
+            as: "it",
+            cond: { $eq: ["$$it.reviewCount", "$minReviewCount"] }
+          }
+        }
+      }
+    },
+    { $unwind: "$results" },
+    { $replaceRoot: { newRoot: "$results" } }
+  ]).toArray();
 };
 
-//added lowest rated courses - SS
+//Added highest rated courses - SS
+const getHighestRatedCourses = async () => {
+  const coursesCollection = await courses();
+  return await coursesCollection.aggregate([
+    {
+      $project: {
+        courseId: 1,
+        avgRating: {
+          $avg: {
+            $map: {
+              input: {
+                $filter: {
+                  input: { $ifNull: ["$ratings", []] },
+                  as: "r",
+                  cond: {
+                    $and: [
+                      { $gte: ["$$r.rating", 1] },
+                      { $lte: ["$$r.rating", 5] }
+                    ]
+                  }
+                }
+              },
+              as: "r",
+              in: "$$r.rating"
+            }
+          }
+        }
+      }
+    },
+    { $match: { avgRating: { $ne: null } } },
+    {
+      $group: {
+        _id: null,
+        maxAvg: { $max: "$avgRating" },
+        items: { $push: { courseId: "$courseId", avgRating: "$avgRating" } }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        results: {
+          $filter: {
+            input: "$items",
+            as: "it",
+            cond: { $eq: ["$$it.avgRating", "$maxAvg"] }
+          }
+        }
+      }
+    },
+    { $unwind: "$results" },
+    { $replaceRoot: { newRoot: "$results" } }
+  ]).toArray();
+};
+
+//Updated lowest rated courses
 const getLowestRatedCourses = async () => {
-	const commentsCollection = await comments();
-	return await commentsCollection.aggregate([
-		{$match: {rating: {$exists: true}}},
-		{$group: {_id: "$courseId", avgRating: {$avg: "$rating"}}},
-		{$sort: {avgRating: 1}}
-	]).toArray();
+  const coursesCollection = await courses();
+  return await coursesCollection.aggregate([
+    {
+      $project: {
+        courseId: 1,
+        avgRating: {
+          $avg: {
+            $map: {
+              input: {
+                $filter: {
+                  input: { $ifNull: ["$ratings", []] },
+                  as: "r",
+                  cond: {
+                    $and: [
+                      { $gte: ["$$r.rating", 1] },
+                      { $lte: ["$$r.rating", 5] }
+                    ]
+                  }
+                }
+              },
+              as: "r",
+              in: "$$r.rating"
+            }
+          }
+        }
+      }
+    },
+    { $match: { avgRating: { $ne: null } } },
+    {
+      $group: {
+        _id: null,
+        minAvg: { $min: "$avgRating" },
+        items: { $push: { courseId: "$courseId", avgRating: "$avgRating" } }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        results: {
+          $filter: {
+            input: "$items",
+            as: "it",
+            cond: { $eq: ["$$it.avgRating", "$minAvg"] }
+          }
+        }
+      }
+    },
+    { $unwind: "$results" },
+    { $replaceRoot: { newRoot: "$results" } }
+  ]).toArray();
 };
 
-export { createCourse, getAllCourses, getCourseById, updateCourse, removeCourse, getMostReviewedCourses, getLeastReviewedCourses, getLowestRatedCourses }; //added new exports for getting most reviewed, least reviewed, and lowest rated courses functions - SS
+//COMMENTS
+
+//Create a comment for a course
+const createComment = async (userId, courseId, text, rating = null) => {
+  userId = validation.validateString("userId", userId);
+  courseId = validation.validateString("courseId", courseId);
+  text = validation.validateString("text", text);
+
+  if (rating !== null) {
+    if (typeof rating !== "number" || rating < 1 || rating > 5) {
+      throw "Rating must be a number between 1 and 5 or null.";
+    }
+  }
+
+  const newComment = {
+    _id: new ObjectId(),
+    userId: new ObjectId(userId),
+    text: text,
+    likes: [],
+    dislikes: [],
+    rating: rating,
+    createdAt: new Date()
+  };
+
+  const coursesCollection = await courses();
+  const updateInfo = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $push: { comments: newComment } }
+  );
+
+  if (updateInfo.modifiedCount === 0) throw "Could not add comment.";
+  return newComment;
+};
+
+//Get all comments for a course
+const getCommentsByCourse = async (courseId) => {
+  courseId = validation.validateString("courseId", courseId);
+  const course = await getCourseById(courseId);
+  return course.comments || [];
+};
+
+//Update a comment's text
+const updateComment = async (courseId, commentId, newText) => {
+  courseId = validation.validateString("courseId", courseId);
+  commentId = validation.validateString("commentId", commentId);
+  newText = validation.validateString("newText", newText);
+
+  const coursesCollection = await courses();
+  const updateInfo = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+    { $set: { "comments.$.text": newText, "comments.$.updatedAt": new Date() } }
+  );
+
+  if (updateInfo.modifiedCount === 0) throw "Could not update comment.";
+  return await getCommentsByCourse(courseId);
+};
+
+//Like a comment
+const likeComment = async (courseId, commentId, userId) => {
+  courseId = validation.validateString("courseId", courseId);
+  commentId = validation.validateString("commentId", commentId);
+  userId = validation.validateString("userId", userId);
+
+  const coursesCollection = await courses();
+  const updateInfo = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+    {
+      $addToSet: { "comments.$.likes": userId },
+      $pull: { "comments.$.dislikes": userId }
+    }
+  );
+
+  if (updateInfo.modifiedCount === 0) throw "Could not like comment.";
+  return await getCommentsByCourse(courseId);
+};
+
+//Dislike a comment
+const dislikeComment = async (courseId, commentId, userId) => {
+  courseId = validation.validateString("courseId", courseId);
+  commentId = validation.validateString("commentId", commentId);
+  userId = validation.validateString("userId", userId);
+
+  const coursesCollection = await courses();
+  const updateInfo = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
+    {
+      $addToSet: { "comments.$.dislikes": userId },
+      $pull: { "comments.$.likes": userId }
+    }
+  );
+
+  if (updateInfo.modifiedCount === 0) throw "Could not dislike comment.";
+  return await getCommentsByCourse(courseId);
+};
+
+//Delete a comment
+const deleteComment = async (courseId, commentId) => {
+  courseId = validation.validateString("courseId", courseId);
+  commentId = validation.validateString("commentId", commentId);
+
+  const coursesCollection = await courses();
+  const updateInfo = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $pull: { comments: { _id: new ObjectId(commentId) } } }
+  );
+
+  if (updateInfo.modifiedCount === 0) throw "Could not delete comment.";
+  return { deleted: true };
+};
+
+//Course ratings calculation
+const recalcCourseRatingFromRatings = async (courseId) => {
+  courseId = validation.validateString("courseId", courseId);
+  if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`;
+
+  const coursesCollection = await courses();
+
+  const agg = await coursesCollection.aggregate([
+    { $match: { _id: new ObjectId(courseId) } },
+    {
+      $project: {
+        avgRating: {
+          $avg: {
+            $map: {
+              input: {
+                $filter: {
+                  input: { $ifNull: ["$ratings", []] },
+                  as: "r",
+                  cond: {
+                    $and: [
+                      { $gte: ["$$r.rating", 1] },
+                      { $lte: ["$$r.rating", 5] }
+                    ]
+                  }
+                }
+              },
+              as: "r",
+              in: "$$r.rating"
+            }
+          }
+        },
+        count: {
+          $size: {
+            $filter: {
+              input: { $ifNull: ["$ratings", []] },
+              as: "r",
+              cond: {
+                $and: [
+                  { $gte: ["$$r.rating", 1] },
+                  { $lte: ["$$r.rating", 5] }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]).toArray();
+
+  const avg = (agg[0] && typeof agg[0].avgRating === "number") ? agg[0].avgRating : null;
+  const cnt = (agg[0] && typeof agg[0].count === "number") ? agg[0].count : 0;
+
+  await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $set: { courseRating: avg, ratingCount: cnt } }
+  );
+
+  return { courseRating: avg, ratingCount: cnt };
+};
+
+//Create or update the current user's course rating
+const setCourseRating = async (courseId, userId, rating) => {
+  courseId = validation.validateString("courseId", courseId);
+  userId = validation.validateString("userId", userId);
+
+  if (typeof rating !== "number" || rating < 1 || rating > 5) {
+    throw "Rating must be a number between 1 and 5.";
+  }
+
+  const coursesCollection = await courses();
+  const courseObjId = new ObjectId(courseId);
+  const userObjId = new ObjectId(userId);
+
+  //If user already rated, can update it
+  const updated = await coursesCollection.updateOne(
+    { _id: courseObjId, "ratings.userId": userObjId },
+    { $set: { "ratings.$.rating": rating, "ratings.$.updatedAt": new Date() } }
+  );
+
+  if (updated.matchedCount === 0) {
+    //no existing rating for this user -> push new
+    await coursesCollection.updateOne(
+      { _id: courseObjId },
+      { $push: { ratings: { userId: userObjId, rating, createdAt: new Date(), updatedAt: new Date() } } }
+    );
+  }
+
+  return await recalcCourseRatingFromRatings(courseId);
+};
+
+//Remove the current user's course rating
+const removeCourseRating = async (courseId, userId) => {
+  courseId = validation.validateString("courseId", courseId);
+  userId = validation.validateString("userId", userId);
+
+  const coursesCollection = await courses();
+
+  const res = await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $pull: { ratings: { userId: new ObjectId(userId) } } }
+  );
+  if (res.matchedCount === 0) throw `Course ${courseId} not found.`;
+
+  return await recalcCourseRatingFromRatings(courseId);
+};
+
+
+export { 
+  createCourse,
+  getAllCourses,
+  getCourseById,
+  updateCourse,
+  removeCourse,
+  getMostReviewedCourses,
+  getLeastReviewedCourses,
+  getHighestRatedCourses,
+  getLowestRatedCourses,
+
+  //comments (embedded)
+  createComment,
+  getCommentsByCourse,
+  updateComment,
+  likeComment,
+  dislikeComment,
+  deleteComment,
+
+  //course-level ratings
+  setCourseRating,
+  removeCourseRating,
+  recalcCourseRatingFromRatings
+};
+
+//added documentation for comments, updated extra features functions, and added getHighestRatedCourses - SS
