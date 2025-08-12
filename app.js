@@ -1,27 +1,21 @@
-import { courseData, commentData } from './data/index.js';
-import {dbConnection, closeConnection} from './config/mongoConnections.js';
-import { ObjectId } from 'mongodb';
+import express from 'express';
+import { dbConnection } from './config/mongoConnections.js';
+import statsRoutes from './routes/stats.js';
 
-const db = await dbConnection();
-await db.dropDatabase();
+const app = express();
 
-const adminId = new ObjectId();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-console.log('Starting database operations...');
-try {
-    const course_one = await courseData.createCourse(
-        adminId.toString(),
-        'cs546',
-        'Software Engineering',
-        'An advanced course in software engineering principles and practices.',
-        new Date('2023-09-01T10:00:00Z'),
-        'https://example.com/course-image.jpg',
-        'Jane Doe'
-    )
-    console.log('Created Course One:', course_one);
-} catch (e) {
-  console.error('Error during database operations:', e);
-}
+app.use('/stats', statsRoutes);
 
-await closeConnection();
-console.log('Database operations completed and connection closed.');
+app.get('/', (_req, res) => {
+  res.send('Class Review API running');
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, async () => {
+  await dbConnection();
+  console.log(`Server running at http://localhost:${port}`);
+});
+
