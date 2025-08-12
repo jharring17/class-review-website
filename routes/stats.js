@@ -1,6 +1,4 @@
-// Unified stats routes: supports both query-style (/stats?sort=...)
-// and path-style (/stats/most-reviewed, etc.).
-
+// routes/stats.js
 import { Router } from 'express';
 import {
   getHighestRated,
@@ -11,16 +9,34 @@ import {
 
 const router = Router();
 
+// small helpers
+const toLimit = (q) => {
+  const n = Number(q);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 10;
+};
+
+// courseRating (fallback to rating)
+const normalize = (arr) =>
+  (arr || []).map((r) => ({
+    ...r,
+    courseRating:
+      typeof r.courseRating === 'number'
+        ? r.courseRating
+        : typeof r.rating === 'number'
+        ? r.rating
+        : null
+  }));
+
 /**
  * GET /stats
- * Query params:
- *   sort  = highestRated | lowestRated | mostReviewed | leastReviewed (default: highestRated)
- *   limit = number of results to return (default: 10, max in data layer: 100)
+ * Query: sort=highestRated|lowestRated|mostReviewed|leastReviewed  (default highestRated)
+ *        limit=number (default 10)
+ * Returns JSON { sort, limit, results }
  */
 router.get('/', async (req, res) => {
   try {
     const sort = String(req.query.sort || 'highestRated');
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = toLimit(req.query.limit);
 
     let results;
     switch (sort) {
@@ -43,58 +59,84 @@ router.get('/', async (req, res) => {
         });
     }
 
-    res.json({ sort, limit, results });
+    res.json({ sort, limit, results: normalize(results) });
   } catch (err) {
     console.error('GET /stats error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-/** Path-style endpoints for compatibility with main branch */
+/* -------- Path-style JSON endpoints -------- */
 
-// GET /stats/most-reviewed
 router.get('/most-reviewed', async (req, res) => {
   try {
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = toLimit(req.query.limit);
     const data = await getMostReviewed(limit);
-    res.json(data);
+    res.json(normalize(data));
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
 
-// GET /stats/least-reviewed
 router.get('/least-reviewed', async (req, res) => {
   try {
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = toLimit(req.query.limit);
     const data = await getLeastReviewed(limit);
-    res.json(data);
+    res.json(normalize(data));
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
 
-// GET /stats/highest-rated
 router.get('/highest-rated', async (req, res) => {
   try {
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = toLimit(req.query.limit);
     const data = await getHighestRated(limit);
-    res.json(data);
+    res.json(normalize(data));
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
 
-// GET /stats/lowest-rated
 router.get('/lowest-rated', async (req, res) => {
   try {
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const limit = toLimit(req.query.limit);
     const data = await getLowestRated(limit);
-    res.json(data);
+    res.json(normalize(data));
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
 
-export default router;
+/* -------- Handlebars page -------- */
+// GET /stats/page
+router.get('/page', async (req, res) => {
+  try {
+    const limit = toLimit(req.query.limit);
 
+    const [mostReviewed, leastReviewed, highestRated, lowestRated] =
+      await Promise.all([
+        getMostReviewed(limit),
+        getLeastReviewed(limit),
+        getHighestRated(limit),
+        getLowestRated(limit)
+      ]);
+
+    res.render('stats', {
+      title: 'Course Stats',
+      limit,
+      mostReviewed: normalize(mostReviewed),
+      leastReviewed: normalize(leastReviewed),
+      highestRated: normalize(highestRated),
+      lowestRated: normalize(lowestRated)
+    });
+  } catch (e) {
+    console.error('Render /stats/page error:', e);
+    res.status(500).render('error', { title: 'Error', error: e.toString() });
+  }
+});
+
+// optional alias: /stats/dashboard for /stats/page
+router.get('/dashboard', (_req, res) => res.redirect('/stats/page'));
+
+export default router;

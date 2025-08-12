@@ -1,0 +1,38 @@
+/* Stats Page Styles */
+
+/* Section headings */
+h1 {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+h2 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 5px;
+}
+
+/* List items */
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    background-color: #f4f4f4;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Course names */
+li strong {
+    color: #333;
+}
+
+/* Space between sections */
+section {
+    margin-bottom: 25px;
+}
