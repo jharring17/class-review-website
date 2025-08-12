@@ -1,5 +1,5 @@
-// Defines the Express routes for fetching course statistics.
-// Calls the functions from data/stats.js and returns JSON results.
+// Unified stats routes: supports both query-style (/stats?sort=...)
+// and path-style (/stats/most-reviewed, etc.).
 
 import { Router } from 'express';
 import {
@@ -15,17 +15,14 @@ const router = Router();
  * GET /stats
  * Query params:
  *   sort  = highestRated | lowestRated | mostReviewed | leastReviewed (default: highestRated)
- *   limit = number of results to return (default: 10, max: 100)
+ *   limit = number of results to return (default: 10, max in data layer: 100)
  */
 router.get('/', async (req, res) => {
   try {
-    // Read sort type and limit from query string
     const sort = String(req.query.sort || 'highestRated');
     const limit = req.query.limit ? Number(req.query.limit) : 10;
 
     let results;
-
-    // Decide which DB function to call based on "sort" param
     switch (sort) {
       case 'highestRated':
         results = await getHighestRated(limit);
@@ -40,14 +37,12 @@ router.get('/', async (req, res) => {
         results = await getLeastReviewed(limit);
         break;
       default:
-        // If sort param is invalid, return 400 (Bad Request)
         return res.status(400).json({
           error:
             "Invalid 'sort'. Use one of: highestRated, lowestRated, mostReviewed, leastReviewed."
         });
     }
 
-    // Respond with JSON results
     res.json({ sort, limit, results });
   } catch (err) {
     console.error('GET /stats error:', err);
@@ -55,4 +50,51 @@ router.get('/', async (req, res) => {
   }
 });
 
+/** Path-style endpoints for compatibility with main branch */
+
+// GET /stats/most-reviewed
+router.get('/most-reviewed', async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const data = await getMostReviewed(limit);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// GET /stats/least-reviewed
+router.get('/least-reviewed', async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const data = await getLeastReviewed(limit);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// GET /stats/highest-rated
+router.get('/highest-rated', async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const data = await getHighestRated(limit);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// GET /stats/lowest-rated
+router.get('/lowest-rated', async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const data = await getLowestRated(limit);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
 export default router;
+
