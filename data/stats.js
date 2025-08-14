@@ -2,21 +2,17 @@
 
 import { courses } from '../config/mongoCollections.js';
 
-/**
- * Ensure limit is a valid number (cap at 100)
- */
 function normalizeLimit(x, fallback = 10) {
   const n = Number(x);
   if (!Number.isFinite(n) || n <= 0) return fallback;
   return Math.min(n, 100);
 }
 
-/**
- * Highest-rated courses
- */
+// Highest-rated (all courses whose rating == global max)
 export async function getHighestRated(limit = 10) {
   const col = await courses();
   const lim = normalizeLimit(limit);
+
   return col.aggregate([
     {
       $addFields: {
@@ -24,23 +20,56 @@ export async function getHighestRated(limit = 10) {
         reviewCount: { $size: { $ifNull: ['$comments', []] } }
       }
     },
-    { $sort: { rating: -1, reviewCount: -1, courseName: 1 } },
-    { $limit: lim },
+    // First, find the global max
+    {
+      $group: {
+        _id: null,
+        maxRating: { $max: '$rating' },
+        items: {
+          $push: {
+            courseId: '$courseId',
+            courseName: '$courseName',
+            professor: '$professor',
+            meetingTime: '$meetingTime',
+            imgLink: '$imgLink',
+            rating: '$rating',
+            reviewCount: '$reviewCount'
+          }
+        }
+      }
+    },
+    // Keep only items with rating == max
     {
       $project: {
-        courseId: 1, courseName: 1, professor: 1, meetingTime: 1, imgLink: 1,
-        courseRating: '$rating', reviewCount: 1
+        _id: 0,
+        results: {
+          $filter: {
+            input: '$items',
+            as: 'it',
+            cond: { $eq: ['$$it.rating', '$maxRating'] }
+          }
+        }
       }
-    }
+    },
+    { $unwind: '$results' },
+    // Nice, stable ordering within ties
+    {
+      $sort: {
+        'results.reviewCount': -1,
+        'results.courseName': 1
+      }
+    },
+    // Optional cap if you still want to cap output size
+    ...(lim ? [{ $limit: lim }] : []),
+    { $replaceRoot: { newRoot: '$results' } }
   ]).toArray();
 }
 
-/**
- * Lowest-rated courses
- */
+// Lowest-rated (all courses whose rating == global min)
 export async function getLowestRated(limit = 10) {
   const col = await courses();
   const lim = normalizeLimit(limit);
+
   return col.aggregate([
     {
       $addFields: {
@@ -48,23 +77,47 @@ export async function getLowestRated(limit = 10) {
         reviewCount: { $size: { $ifNull: ['$comments', []] } }
       }
     },
-    { $sort: { rating: 1, reviewCount: -1, courseName: 1 } },
-    { $limit: lim },
+    {
+      $group: {
+        _id: null,
+        minRating: { $min: '$rating' },
+        items: {
+          $push: {
+            courseId: '$courseId',
+            courseName: '$courseName',
+            professor: '$professor',
+            meetingTime: '$meetingTime',
+            imgLink: '$imgLink',
+            rating: '$rating',
+            reviewCount: '$reviewCount'
+          }
+        }
+      }
+    },
     {
       $project: {
-        courseId: 1, courseName: 1, professor: 1, meetingTime: 1, imgLink: 1,
-        courseRating: '$rating', reviewCount: 1
+        _id: 0,
+        results: {
+          $filter: {
+            input: '$items',
+            as: 'it',
+            cond: { $eq: ['$$it.rating', '$minRating'] }
+          }
+        }
       }
-    }
+    },
+    { $unwind: '$results' },
+    { $sort: { 'results.reviewCount': -1, 'results.courseName': 1 } },
+    ...(lim ? [{ $limit: lim }] : []),
+    { $replaceRoot: { newRoot: '$results' } }
   ]).toArray();
 }
 
-/**
- * Most-reviewed courses
- */
+// Most-reviewed (all courses whose reviewCount == global max)
 export async function getMostReviewed(limit = 10) {
   const col = await courses();
   const lim = normalizeLimit(limit);
+
   return col.aggregate([
     {
       $addFields: {
@@ -72,23 +125,47 @@ export async function getMostReviewed(limit = 10) {
         rating: { $ifNull: ['$courseRating', 0] }
       }
     },
-    { $sort: { reviewCount: -1, rating: -1, courseName: 1 } },
-    { $limit: lim },
+    {
+      $group: {
+        _id: null,
+        maxReviews: { $max: '$reviewCount' },
+        items: {
+          $push: {
+            courseId: '$courseId',
+            courseName: '$courseName',
+            professor: '$professor',
+            meetingTime: '$meetingTime',
+            imgLink: '$imgLink',
+            rating: '$rating',
+            reviewCount: '$reviewCount'
+          }
+        }
+      }
+    },
     {
       $project: {
-        courseId: 1, courseName: 1, professor: 1, meetingTime: 1, imgLink: 1,
-        courseRating: '$rating', reviewCount: 1
+        _id: 0,
+        results: {
+          $filter: {
+            input: '$items',
+            as: 'it',
+            cond: { $eq: ['$$it.reviewCount', '$maxReviews'] }
+          }
+        }
       }
-    }
+    },
+    { $unwind: '$results' },
+    { $sort: { 'results.rating': -1, 'results.courseName': 1 } },
+    ...(lim ? [{ $limit: lim }] : []),
+    { $replaceRoot: { newRoot: '$results' } }
   ]).toArray();
 }
 
-/**
- * Least-reviewed courses
- */
+// Least-reviewed (all courses whose reviewCount == global min)
 export async function getLeastReviewed(limit = 10) {
   const col = await courses();
   const lim = normalizeLimit(limit);
+
   return col.aggregate([
     {
       $addFields: {
@@ -96,14 +173,38 @@ export async function getLeastReviewed(limit = 10) {
         rating: { $ifNull: ['$courseRating', 0] }
       }
     },
-    { $sort: { reviewCount: 1, rating: -1, courseName: 1 } },
-    { $limit: lim },
+    {
+      $group: {
+        _id: null,
+        minReviews: { $min: '$reviewCount' },
+        items: {
+          $push: {
+            courseId: '$courseId',
+            courseName: '$courseName',
+            professor: '$professor',
+            meetingTime: '$meetingTime',
+            imgLink: '$imgLink',
+            rating: '$rating',
+            reviewCount: '$reviewCount'
+          }
+        }
+      }
+    },
     {
       $project: {
-        courseId: 1, courseName: 1, professor: 1, meetingTime: 1, imgLink: 1,
-        courseRating: '$rating', reviewCount: 1
+        _id: 0,
+        results: {
+          $filter: {
+            input: '$items',
+            as: 'it',
+            cond: { $eq: ['$$it.reviewCount', '$minReviews'] }
+          }
+        }
       }
-    }
+    },
+    { $unwind: '$results' },
+    { $sort: { 'results.rating': -1, 'results.courseName': 1 } },
+    ...(lim ? [{ $limit: lim }] : []),
+    { $replaceRoot: { newRoot: '$results' } }
   ]).toArray();
 }
-

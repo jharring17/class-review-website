@@ -46,9 +46,9 @@ export function validateCourseName(courseName) {
  * @throws Will throw an error if description is invalid.
  */
 export function validateCourseDescription(courseDescription) {
-	courseName = validateString("courseDescription", courseDescription)
-	if (courseName.length > 200) throw `Error: course description cannot exceed 20 character.`
-	return courseName
+	courseDescription = validateString("courseDescription", courseDescription)
+	if (courseDescription.length > 200) throw `Error: course description cannot exceed 20 character.`
+	return courseDescription
 }
 
 /**

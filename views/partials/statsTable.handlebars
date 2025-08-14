@@ -1,0 +1,21 @@
+{{!-- views/partials/statsTable.handlebars --}}
+<table class="stats-table">
+  <thead>
+    <tr>
+      <th>{{leftHeader}}</th>
+      <th class="num">{{rightHeader}}</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{#if items.length}}
+    {{#each items}}
+      <tr>
+        <td><code>{{lookup this ../leftKey}}</code></td>
+        <td class="num">{{lookup this ../rightKey}}</td>
+      </tr>
+    {{/each}}
+  {{else}}
+      <tr><td colspan="2" class="empty">No data</td></tr>
+  {{/if}}
+  </tbody>
+</table>

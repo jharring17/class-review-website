@@ -1,0 +1,65 @@
+<h1>Course Statistics</h1>
+
+<section>
+  <h2>Most Reviewed Courses</h2>
+  {{#if mostReviewed.length}}
+    <ul>
+      {{#each mostReviewed}}
+        <li>
+          <strong>{{courseName}}</strong>
+          ({{reviewCount}} reviews, Rating: {{courseRating}})
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No courses found.</p>
+  {{/if}}
+</section>
+
+<section>
+  <h2>Least Reviewed Courses</h2>
+  {{#if leastReviewed.length}}
+    <ul>
+      {{#each leastReviewed}}
+        <li>
+          <strong>{{courseName}}</strong>
+          ({{reviewCount}} reviews, Rating: {{courseRating}})
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No courses found.</p>
+  {{/if}}
+</section>
+
+<section>
+  <h2>Highest Rated Courses</h2>
+  {{#if highestRated.length}}
+    <ul>
+      {{#each highestRated}}
+        <li>
+          <strong>{{courseName}}</strong>
+          (Rating: {{courseRating}}, {{reviewCount}} reviews)
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No courses found.</p>
+  {{/if}}
+</section>
+
+<section>
+  <h2>Lowest Rated Courses</h2>
+  {{#if lowestRated.length}}
+    <ul>
+      {{#each lowestRated}}
+        <li>
+          <strong>{{courseName}}</strong>
+          (Rating: {{courseRating}}, {{reviewCount}} reviews)
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No courses found.</p>
+  {{/if}}
+</section>
