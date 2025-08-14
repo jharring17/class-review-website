@@ -1,0 +1,43 @@
+{{!-- registration.handlebars --}}
+
+<p id='siteDescription'>
+	Register a new account to access the system. Please fill in all the fields below.
+</p>
+
+<form id='signup-form' name='signup-form' action='/register' method='POST'>
+	<label for='firstName'>First Name:</label>
+	<input type='text' id='firstName' name='firstName' required />
+
+	<label for='lastName'>Last Name:</label>
+	<input type='text' id='lastName' name='lastName' required />
+
+	<label for='username'>Username:</label>
+	<input type='text' id='username' name='username' required />
+
+	<label for='password'>Password:</label>
+	<input type='password' id='password' name='password' required />
+
+	<label for='confirmPassword'>Confirm Password:</label>
+	<input type='password' id='confirmPassword' name='confirmPassword' required />
+
+	<label for='bio'>Bio:</label>
+	<textarea id='bio' name='bio' rows='3' placeholder='Tell us a bit about yourself'></textarea>
+
+	<label for='imgLink'>Profile Image URL:</label>
+	<input type='url' id='imgLink' name='imgLink' placeholder='https://example.com/photo.jpg' />
+
+	<label for='role'>Role:</label>
+	<select id='role' name='role' required>
+		<option value='admin'>Admin</option>
+		<option value='student'>Student</option>
+	</select>
+
+	<button id='submitButton' name='submitButton' type='submit'>Register</button>
+</form>
+
+<p>
+	<a href='/login'>Already have an account? Click here to sign-in</a>
+</p>
+<p>
+	<a href='/'>Return to Home</a>
+</p>

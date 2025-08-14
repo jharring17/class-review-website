@@ -1,0 +1,18 @@
+{{!login form handlebar template}}
+<form id='signin-form' action='/login' method='POST'>
+	<div>
+		<label for='userId'>User ID:</label>
+		<input type='text' id='userId' name='userId' required />
+	</div>
+
+	<div>
+		<label for='password'>Password:</label>
+		<input type='password' id='password' name='password' required />
+	</div>
+
+	<button id='submit_button' name='submit_button' type='submit'>Sign In</button>
+</form>
+
+<p>
+	<a href='/register'>Click here to signup!</a>
+</p>
