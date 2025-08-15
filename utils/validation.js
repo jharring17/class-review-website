@@ -177,3 +177,47 @@ export const validArrayOfObjectIds = (array, fieldName) => {
 
 	return objectIds;
 };
+
+/**
+ * Validates user provided name
+ * @param {string} name - The name to validate
+ * @returns {string} - Returns validated name
+ * @throws Will throw an error if the input is invalid
+ */
+export const validateName = (name) => {
+	name = validateString('name', name);
+	if (name.length < 2 || name.length > 25) {
+		throw `Error: ${name} must be between 2 and 25 characters.`;
+	}
+	return name;
+};
+
+/**
+ * Validates user provided password
+ * @param {string} password - The password to validate
+ * @returns {string} - Returns validated password
+ * @throws Will throw an error if the input is invalid
+ */
+export const validatePasswordInputs = (password) => {
+	password = validateString('password', password);
+	// Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.
+	if (password.length < 8) throw `Error: ${msgVal} must be at least 8 characters.`;
+	if (/\s/.test(password)) throw `Error: password cannot contain spaces.`;
+	let passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?])[A-Za-z\d#$@!%&*?]{8,30}$/;
+	if (!password.match(passwordFormat))
+		throw `Error: ${msgVal} must contain at least one lowercase letter, one uppercase letter, one number, and one special character.`;
+	return password;
+};
+
+/**
+ * Validates user provided password
+ * @param {string} password - The password to validate
+ * @returns {string} - Returns validated password
+ * @throws Will throw an error if the input is invalid
+ */
+export const validateRole = (role) => {
+	role = validateString('Role', role);
+	if (role !== 'admin' && role !== 'user')
+		throw `Error: ${role} must be either 'student' or 'admin'.`;
+	return role;
+};

@@ -1,18 +1,26 @@
 // this file contains methods for the users collection
 
-import { validateString, validUrl, validArrayOfObjectIds, validateImgLink } from '../utils/validation.js';
+import {
+	validateString,
+	validUrl,
+	validArrayOfObjectIds,
+	validateImgLink,
+	validateName,
+	validatePasswordInputs,
+	validateRole,
+} from '../utils/validation.js';
 import { ObjectId } from 'mongodb';
 import { users } from '../config/mongoCollections.js';
 import bcrypt from 'bcrypt';
 
 const createUser = async (firstName, lastName, username, password, bio, imgLink, role) => {
-	firstName = validateString('First Name', firstName);
-	lastName = validateString('Last Name', lastName);
+	firstName = validateName(firstName);
+	lastName = validateName(lastName);
 	username = validateString('Username', username);
-	password = validateString('Password', password); // Assume password is already hashed
+	password = validatePasswordInputs(password);
 	bio = validateString('Bio', bio);
 	imgLink = await validateImgLink(imgLink);
-	role = validateString(role, 'Role (e.g., student, teacher)');
+	role = validateRole(role);
 
 	let hashedPassword = await bcrypt.hash(password, 10);
 
@@ -75,12 +83,12 @@ const updateUser = async (userId, fieldsToUpdate) => {
 	const updateData = {};
 	const { firstName, lastName, password, bio, imgLink, role, lastViewed } = fieldsToUpdate;
 
-	if (firstName) updateData.firstName = validateString(firstName, 'First Name');
-	if (lastName) updateData.lastName = validateString(lastName, 'Last Name');
-	if (password) updateData.password = validateString(password, 'Password'); // Assume updated passwords are hashed
+	if (firstName) updateData.firstName = validateName(firstName);
+	if (lastName) updateData.lastName = validateName(lastName);
+	if (password) updateData.password = validatePasswordInputs(password);
 	if (bio) updateData.bio = validateString(bio, 'Bio');
-	if (imgLink) updateData.imgLink = validUrl(imgLink, 'Image Link');
-	if (role) updateData.role = validateString(role, 'Role');
+	if (imgLink) updateData.imgLink = validateImgLink(imgLink);
+	if (role) updateData.role = validateRole(role);
 	if (lastViewed) updateData.lastViewed = validArrayOfObjectIds(lastViewed, 'Last Viewed IDs');
 
 	updateData.updatedAt = new Date();
@@ -127,12 +135,8 @@ const loginUser = async (username, password) => {
 	username = validateString('username', username);
 	password = validateString('password', password);
 
-    console.log("TESTING: {username: " + username + ", password: " + password + "}");
-
 	// Gets the users collection.
 	const usersCollection = await users();
-
-    console.log("GOT COLLECTION")
 
 	// Gets the user with the matching email.
 	const user = await usersCollection.findOne({ username: username.toLowerCase() });
@@ -140,11 +144,8 @@ const loginUser = async (username, password) => {
 		throw 'Error: Either the username or password is invalid.';
 	}
 
-    console.log("TESTING: user found: " + JSON.stringify(user));
-    console.log("TESTING: user password: " + user.password);
-
 	// Checks if the password matches the hashed password.
-	const match = await bcrypt.compare(password, user.password); //! need to update user function not storing right
+	const match = await bcrypt.compare(password, user.password);
 	if (match) {
 		// Returns user information.
 		return {
@@ -159,12 +160,4 @@ const loginUser = async (username, password) => {
 	}
 };
 
-export {
-	createUser,
-	getAllUsers,
-	getUserById,
-	removeUser,
-	updateUser,
-	addViewedClass,
-	loginUser,
-};
+export { createUser, getAllUsers, getUserById, removeUser, updateUser, addViewedClass, loginUser };
