@@ -96,11 +96,4 @@ router.route('/login').post(async (req, res) => {
 	}
 });
 
-// GET /users/logout - Logout route
-router.route('/logout').get(async (req, res) => {
-	// logout user and redirect to home
-	req.session.destroy();
-	return res.render('home', { title: 'Home' });
-});
-
 export default router;

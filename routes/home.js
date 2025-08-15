@@ -16,6 +16,12 @@ router.get('/login', (req, res) => {
 	res.status(200).render('login');
 });
 
+// Logout the user and render the home page
+router.route('/logout').get(async (req, res) => {
+	req.session.destroy();
+	return res.render('home', { title: 'Home' });
+});
+
 // Render the error page
 router.get('/error', (req, res) => {
 	res.status(404).render('error', { errorMessage: 'Error: Route not found' });

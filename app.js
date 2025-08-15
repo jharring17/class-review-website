@@ -39,7 +39,7 @@ app.use('/login', (req, res, next) => {
 		if (req.session.user.role === 'admin') {
 			return res.redirect('/admin');
 		} else {
-			return res.redirect('/protected');
+			return res.redirect('/student');
 		}
 	} else {
 		next();
@@ -52,15 +52,15 @@ app.use('/register', (req, res, next) => {
 		if (req.session.user.role === 'admin') {
 			return res.redirect('/admin');
 		} else {
-			return res.redirect('/protected');
+			return res.redirect('/student');
 		}
 	} else {
 		next();
 	}
 });
 
-// Protected Middleware
-app.use('/protected', (req, res, next) => {
+// student Middleware
+app.use('/student', (req, res, next) => {
 	if (req.session.user) {
 		next();
 	} else {
@@ -108,7 +108,6 @@ app.use(async (req, res, next) => {
 app.use('/public', staticDir);
 app.use(express.urlencoded({ extended: true }));
 app.use(rewriteUnsupportedBrowserMethods);
-
 app.engine('handlebars', exphbs.engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 
