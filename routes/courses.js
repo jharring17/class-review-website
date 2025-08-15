@@ -51,6 +51,49 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ---- HTML search page ----
+
+// GET /courses/search
+router.get('/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const page = Math.max(1, Number(req.query.page || 1));
+    const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize || 10)));
+
+    if (!q) {
+      return res.render('courses/search', { title: 'Search Courses' });
+    }
+
+    const col = await coursesCol();
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const cursor = col.find({ $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }] });
+
+    const total = await cursor.count();
+    const items = await cursor
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+
+    return res.render('courses/search', {
+      title: 'Search Courses',
+      q,
+      page,
+      pageSize,
+      total,
+      items
+    });
+  } catch (e) {
+    return res.status(500).render('error', { title: 'Error', error: e?.toString?.() || 'Internal error' });
+  }
+});
+
+// POST /courses/search
+router.post('/search', (req, res) => {
+  const q = (req.body.q || '').trim();
+  const url = q ? `/courses/search?q=${encodeURIComponent(q)}` : '/courses/search';
+  res.redirect(url);
+});
+
 // GET /courses/:id
 router.get('/:id', async (req, res) => {
   try {
