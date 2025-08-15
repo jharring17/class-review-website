@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from 'axios';
 
 /**
  * Validates a string.
@@ -21,10 +21,10 @@ export function validateString(name, value) {
  * @throws Will throw if course ID is invalid.
  */
 export function validateCourseId(courseId) {
-	courseId = validateString("courseId", courseId)
-	if (courseId.length !== 6) throw `Error: ${courseId} must be 6 characters.`
-  	if(!(/^[A-Za-z]{2}-\d{3}$/.test(courseId))) throw `Error: ${courseId} is invalid.`
-	return courseId
+	courseId = validateString('courseId', courseId);
+	if (courseId.length !== 6) throw `Error: ${courseId} must be 6 characters.`;
+	if (!/^[A-Za-z]{2}-\d{3}$/.test(courseId)) throw `Error: ${courseId} is invalid.`;
+	return courseId;
 }
 
 /**
@@ -34,9 +34,9 @@ export function validateCourseId(courseId) {
  * @throws Will throw if course name is invalid.
  */
 export function validateCourseName(courseName) {
-	courseName = validateString("courseName", courseName)
-	if (courseName.length > 20) throw `Error: course name cannot exceed 20 character.`
-	return courseName
+	courseName = validateString('courseName', courseName);
+	if (courseName.length > 20) throw `Error: course name cannot exceed 20 character.`;
+	return courseName;
 }
 
 /**
@@ -46,9 +46,10 @@ export function validateCourseName(courseName) {
  * @throws Will throw an error if description is invalid.
  */
 export function validateCourseDescription(courseDescription) {
-	courseDescription = validateString("courseDescription", courseDescription)
-	if (courseDescription.length > 200) throw `Error: course description cannot exceed 20 character.`
-	return courseDescription
+	courseDescription = validateString('courseDescription', courseDescription);
+	if (courseDescription.length > 200)
+		throw `Error: course description cannot exceed 20 character.`;
+	return courseDescription;
 }
 
 /**
@@ -57,17 +58,17 @@ export function validateCourseDescription(courseDescription) {
  * @throws Will throw an error if link is improperly formatted or does not exist
  */
 export async function validateImgLink(imgLink) {
-	imgLink = validateString("imgLink", imgLink)
-	
+	imgLink = validateString('imgLink', imgLink);
+
 	// validate img format
-	if (!imgLink.match(/^https?:\/\/.+\.(jpg|jpeg|png)$/))
+	if (!imgLink.match(/^https?:\/\/.+\.(jpg|jpeg|png)(\?.*)?$/i))
 		throw `Error: ${imgLink} is not a valid link.`;
-	
+
 	// attempt to get the img
 	try {
-		const result = await axios.get(imgLink)
-	} catch(e) {
-		throw `Error: ${imgLink} cannot be reached.`
+		const result = await axios.get(imgLink);
+	} catch (e) {
+		throw `Error: ${imgLink} cannot be reached.`;
 	}
 	return imgLink;
 }
@@ -78,10 +79,12 @@ export async function validateImgLink(imgLink) {
  * @throws Will throw an error if the professor name is improperly formatted.
  */
 export function validateProfessor(professor) {
-	professor = validateString("professor", professor)
-	if (professor.length < 5 || professor.length > 50) throw `Error: name must be 5 to 50 characters.`
-	if (!(/^[A-Za-z'-]+\s[A-Za-z'-]+$/.test(professor))) throw `Error: name must be of the format <firstname> <lastname>.`
-	return professor
+	professor = validateString('professor', professor);
+	if (professor.length < 5 || professor.length > 50)
+		throw `Error: name must be 5 to 50 characters.`;
+	if (!/^[A-Za-z'-]+\s[A-Za-z'-]+$/.test(professor))
+		throw `Error: name must be of the format <firstname> <lastname>.`;
+	return professor;
 }
 /*
  * @param arr - the array of strings
@@ -89,8 +92,7 @@ export function validateProfessor(professor) {
  * @returns {*}
  */
 export const validArrayOfStrings = (arr, fieldName) => {
-	if (!Array.isArray(arr) || arr.length === 0)
-		throw `${fieldName} must be a non-empty array`;
+	if (!Array.isArray(arr) || arr.length === 0) throw `${fieldName} must be a non-empty array`;
 	for (let s of arr) {
 		if (typeof s !== 'string' || s.trim().length === 0)
 			throw `Each item in ${fieldName} must be a non-empty string`;
@@ -140,7 +142,6 @@ export const validUrl = (url, fieldName) => {
 
 	return trimmedUrl;
 };
-
 
 import { ObjectId } from 'mongodb';
 

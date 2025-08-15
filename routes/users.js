@@ -5,9 +5,10 @@ import {
   getUserById,
   updateUser,
   removeUser,
-  addViewedClass
+  addViewedClass,
+  loginUser
 } from '../data/users.js';
-
+import * as validation from '../utils/validation.js'
 const router = express.Router();
 
 //GET /users
@@ -29,18 +30,6 @@ router.get('/:id', async (req, res) => {
   } 
   catch (e) {
     res.status(404).json({ error: e.toString() });
-  }
-});
-
-//POST /users
-router.post('/', async (req, res) => {
-  try {
-    const { firstName, lastName, username, password, bio, imgLink, role } = req.body;
-    const newUser = await createUser(firstName, lastName, username, password, bio, imgLink, role);
-    res.status(201).json(newUser);
-  } 
-  catch (e) {
-    res.status(400).json({ error: e.toString() });
   }
 });
 
@@ -76,6 +65,42 @@ router.patch('/:id/viewed', async (req, res) => {
   catch (e) {
     res.status(400).json({ error: e.toString() });
   }
+});
+
+// POST /users - register route
+router.post('/register', async (req, res) => {
+  try {
+    // register the user
+    const { firstName, lastName, username, password, bio, imgLink, role } = req.body;
+    const newUser = await createUser(firstName, lastName, username, password, bio, imgLink, role);
+    return res.status(201).render('login', { title: 'Login' });
+  } 
+  catch (e) {
+    res.status(400).json({ error: e.toString() });
+  }
+});
+
+// POST /users/login - Login route
+router.route('/login').post(async (req, res) => {
+	const { username, password } = req.body;
+	try {
+
+    console.log("TESTING: {username: " + username + ", password: " + password + "}");
+
+    // login the user and set the session
+		const user = await loginUser(username, password);
+		req.session.user = user;
+		return res.status(200).render('dashboard', { title: 'Dashboard', user });
+	} catch (e) {
+		res.status(400).json({ error: e.toString() });
+	}
+});
+
+// GET /users/logout - Logout route
+router.route('/logout').get(async (req, res) => {
+	// logout user and redirect to home
+	req.session.destroy();
+	return res.render('home', { title: 'Home' });
 });
 
 export default router;
