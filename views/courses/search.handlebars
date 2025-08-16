@@ -1,32 +1,18 @@
-<link rel="stylesheet" href="/public/css/styles.css">
-
 <h1>Search Courses</h1>
 
-<form action="/courses/search" method="post" class="form">
-  <label for="q">Search by Course ID, Name, or Professor</label>
-  <div>
-    <input id="q" name="q" type="text" value="{{q}}" placeholder="e.g. CS-546 or Software or Jane" />
-    <button type="submit">Search</button>
+<form action="/courses/search/results" method="get" class="row g-3 my-3">
+  <div class="col-sm-8 col-md-6">
+    <label for="q" class="form-label">Search by ID, name, or professor</label>
+    <input
+      id="q"
+      name="q"
+      type="text"
+      class="form-control"
+      placeholder="e.g. CS-546 or Software or Jane"
+      required
+    />
+  </div>
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">Search</button>
   </div>
 </form>
-
-{{#if q}}
-  <p>Showing results for <strong>{{q}}</strong> (page {{page}})</p>
-
-  {{#if items.length}}
-    <ul class="course-list">
-      {{#each items}}
-        <li class="course-item">
-          <strong>{{courseName}}</strong> ({{courseId}})
-          <div class="meta">
-            Professor: {{professor}}
-            {{#if courseRating}} | Rating: {{courseRating}}{{/if}}
-            {{#if reviewCount}} | Reviews: {{reviewCount}}{{/if}}
-          </div>
-        </li>
-      {{/each}}
-    </ul>
-  {{else}}
-    <p class="empty">No courses matched your search.</p>
-  {{/if}}
-{{/if}}
