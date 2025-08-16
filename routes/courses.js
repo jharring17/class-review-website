@@ -14,7 +14,7 @@ import {
   likeComment,
   dislikeComment,
   deleteComment,
-} from '../data/courses.js';
+} from '../data/courses.js'; // uses signatures in data layer :contentReference[oaicite:0]{index=0}
 
 import { courses as coursesCol } from '../config/mongoCollections.js';
 import { requireAuth, requireRole, requireCommentOwner } from '../middleware/auth.js';
@@ -52,7 +52,7 @@ async function findCoursesByQuery(q, page = 1, pageSize = 10) {
 }
 
 /* =========================
-   Pages / HTML routes
+   Pages / HTML routes (kept from main)
 ========================= */
 
 // GET /courses/allCourses  (renders list)
@@ -185,27 +185,18 @@ router.get('/:id', async (req, res) => {
 });
 
 /* =========================
-   Admin create/update/delete
+   Admin create/update/delete 
 ========================= */
-// Role checks: must be logged in and have role === 'admin'
+
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
-    const {
-      adminId,
-      courseId,
-      courseName,
-      courseDescription,
-      meetingTime,
-      imgLink,
-      professor,
-    } = req.body;
+    const { adminId, courseId, courseName, courseDescription, imgLink, professor } = req.body;
 
     const created = await createCourse(
       String(adminId),
       String(courseId),
       String(courseName),
       String(courseDescription),
-      meetingTime ? new Date(meetingTime) : new Date(),
       String(imgLink),
       String(professor)
     );
@@ -217,26 +208,16 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
 
 router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // optional sanity check that body.courseId matches this id if you decide to.
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
 
-    const {
-      adminId,
-      courseId,
-      courseName,
-      courseDescription,
-      meetingTime,
-      imgLink,
-      professor,
-    } = req.body;
+    const { adminId, courseId, courseName, courseDescription, imgLink, professor } = req.body;
 
     const updated = await updateCourse(
-      String(id),
       String(adminId),
       String(courseId),
       String(courseName),
       String(courseDescription),
-      meetingTime ? new Date(meetingTime) : new Date(),
       String(imgLink),
       String(professor)
     );
@@ -258,7 +239,7 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 /* =========================
-   Embedded comments (protected)
+   Embedded comments 
 ========================= */
 
 // list comments
@@ -279,7 +260,7 @@ router.post('/:courseId/comments', requireAuth, async (req, res) => {
     const { courseId } = req.params;
     if (!isValidId(courseId)) return res.status(400).json({ error: 'Invalid course id' });
 
-    const userId = req.session.user._id; // don’t trust body.userId
+    const userId = req.session.user._id; // do NOT trust body.userId
     const { text, rating } = req.body;
 
     const newComment = await createComment(String(userId), String(courseId), String(text), rating ?? null);
@@ -348,4 +329,5 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
 });
 
 export default router;
+
 

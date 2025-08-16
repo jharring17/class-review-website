@@ -1,76 +1,61 @@
 // middleware/auth.js
-// Session-based auth + role checks + comment ownership checks
+// Minimal session/role/ownership helpers
 
 import { ObjectId } from 'mongodb';
 import { courses as coursesCol } from '../config/mongoCollections.js';
 
-/**
- * Require that a user is logged in (session-auth).
- */
+// Must be logged in
 export function requireAuth(req, res, next) {
-  const user = req.session?.user;
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated' });
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: 'Authentication required.' });
   }
   next();
 }
 
-/**
- * Role-based guard.
- * Usage: requireRole('admin') or requireRole('admin', 'instructor')
- */
-export function requireRole(...roles) {
-  return (req, res, next) => {
-    const role = req.session?.user?.role;
-    if (!role) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-    if (!roles.includes(role)) {
-      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+// Must have specific role (e.g., 'admin')
+export function requireRole(role) {
+  return function (req, res, next) {
+    const user = req.session?.user;
+    if (!user) return res.status(401).json({ error: 'Authentication required.' });
+    if (String(user.role) !== String(role)) {
+      return res.status(403).json({ error: 'Forbidden: insufficient role.' });
     }
     next();
   };
 }
 
-/**
- * Ensure the logged-in user owns the comment (or is admin).
- * Expects :courseId and :commentId route params.
- */
+// Only the comment owner may modify/delete their comment.
 export async function requireCommentOwner(req, res, next) {
   try {
+    const userId = req.session?.user?._id;
+    if (!userId) return res.status(401).json({ error: 'Authentication required.' });
+
     const { courseId, commentId } = req.params;
-
     if (!ObjectId.isValid(String(courseId)) || !ObjectId.isValid(String(commentId))) {
-      return res.status(400).json({ error: 'Invalid id' });
+      return res.status(400).json({ error: 'Invalid id.' });
     }
-
-    const user = req.session?.user;
-    if (!user) return res.status(401).json({ error: 'Not authenticated' });
-
-    // Admins can bypass ownership checks if you want:
-    if (user.role === 'admin') return next();
 
     const col = await coursesCol();
-    const course = await col.findOne(
-      { _id: new ObjectId(courseId), 'comments._id': new ObjectId(commentId) },
-      { projection: { 'comments.$': 1 } }
-    );
+    const course = await col.findOne({
+      _id: new ObjectId(String(courseId)),
+      'comments._id': new ObjectId(String(commentId))
+    }, { projection: { comments: 1 } });
 
-    if (!course || !course.comments?.length) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
+    if (!course) return res.status(404).json({ error: 'Comment not found.' });
 
-    const comment = course.comments[0];
-    const ownerId = String(comment.userId);
-    if (ownerId !== String(user._id)) {
-      return res.status(403).json({ error: 'Forbidden: not the comment owner' });
+    const comment = (course.comments || []).find(c => String(c._id) === String(commentId));
+    if (!comment) return res.status(404).json({ error: 'Comment not found.' });
+
+    if (String(comment.userId) !== String(userId)) {
+      return res.status(403).json({ error: 'Forbidden: not the comment owner.' });
     }
 
     next();
   } catch (e) {
     console.error('requireCommentOwner error:', e);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
 
 
