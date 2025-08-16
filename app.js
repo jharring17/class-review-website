@@ -19,6 +19,8 @@ app.use(
   })
 );
 
+app.use('/public', express.static('public'));
+
 app.use('/stats', statsRoutes);
 app.use('/courses', coursesRoutes);
 app.use('/users', usersRoutes);
