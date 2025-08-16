@@ -3,7 +3,7 @@ const router = Router();
 
 // Render the home page
 router.get('/', (req, res) => {
-	res.status(200).render('home');
+	res.status(200).render('courses/search', { title: 'Home' });
 });
 
 // Render the register page
