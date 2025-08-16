@@ -79,6 +79,13 @@ const removeUser = async (userId) => {
 
 const updateUser = async (userId, fieldsToUpdate) => {
 	if (!ObjectId.isValid(userId)) throw 'Invalid user ID';
+	firstName = validateName(firstName);
+	lastName = validateName(lastName);
+	username = validateString('Username', username);
+	password = validatePasswordInputs(password);
+	bio = validateString('Bio', bio);
+	imgLink = await validateImgLink(imgLink);
+	role = validateRole(role);
 
 	const updateData = {};
 	const { firstName, lastName, password, bio, imgLink, role, lastViewed } = fieldsToUpdate;
