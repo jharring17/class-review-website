@@ -176,7 +176,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ---------- Admin create/update/delete (Task 6 will add role checks) ----------
+// ---------- Admin create/update/delete ----------
 router.post('/', async (req, res) => {
   try {
     const {
