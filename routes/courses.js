@@ -13,15 +13,17 @@ import {
   updateComment,
   likeComment,
   dislikeComment,
-  deleteComment
+  deleteComment,
 } from '../data/courses.js';
 
 import { courses as coursesCol } from '../config/mongoCollections.js';
-import { requireAuth, requireCommentOwner } from '../middleware/auth.js';
+import { requireAuth, requireRole, requireCommentOwner } from '../middleware/auth.js';
 
 const router = Router();
 
-// ---------- helpers ----------
+/* =========================
+   Helpers
+========================= */
 const isValidId = (id) => ObjectId.isValid(String(id));
 
 const toPosInt = (val, def) => {
@@ -49,7 +51,9 @@ async function findCoursesByQuery(q, page = 1, pageSize = 10) {
   return { total, items };
 }
 
-// ---------- Pages / HTML routes (kept from main) ----------
+/* =========================
+   Pages / HTML routes
+========================= */
 
 // GET /courses/allCourses  (renders list)
 router.get('/allCourses', async (req, res) => {
@@ -138,7 +142,9 @@ router.get('/search/results', async (req, res) => {
   }
 });
 
-// ---------- JSON API list with optional search ----------
+/* =========================
+   JSON API list
+========================= */
 router.get('/', async (req, res) => {
   try {
     const page = toPosInt(req.query.page, 1);
@@ -160,7 +166,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ---------- Course page ----------
+/* =========================
+   Course page
+========================= */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -176,8 +184,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ---------- Admin create/update/delete ----------
-router.post('/', async (req, res) => {
+/* =========================
+   Admin create/update/delete
+========================= */
+// Role checks: must be logged in and have role === 'admin'
+router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const {
       adminId,
@@ -204,7 +215,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
@@ -235,7 +246,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
@@ -246,7 +257,9 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// ---------- Embedded comments (with protections) ----------
+/* =========================
+   Embedded comments (protected)
+========================= */
 
 // list comments
 router.get('/:courseId/comments', async (req, res) => {
@@ -266,7 +279,7 @@ router.post('/:courseId/comments', requireAuth, async (req, res) => {
     const { courseId } = req.params;
     if (!isValidId(courseId)) return res.status(400).json({ error: 'Invalid course id' });
 
-    const userId = req.session.user._id; // <- do NOT trust body.userId
+    const userId = req.session.user._id; // don’t trust body.userId
     const { text, rating } = req.body;
 
     const newComment = await createComment(String(userId), String(courseId), String(text), rating ?? null);
@@ -335,5 +348,4 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
 });
 
 export default router;
-
 
