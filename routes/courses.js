@@ -1,6 +1,6 @@
+// routes/courses.js
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
-import { courses as coursesCol } from '../config/mongoCollections.js';
 import {
   createCourse,
   getAllCourses,
@@ -13,12 +13,15 @@ import {
   updateComment,
   likeComment,
   dislikeComment,
-  deleteComment,
+  deleteComment
 } from '../data/courses.js';
+
+import { courses as coursesCol } from '../config/mongoCollections.js';
+import { requireAuth, requireCommentOwner } from '../middleware/auth.js';
 
 const router = Router();
 
-// Helpers
+// ---------- helpers ----------
 const isValidId = (id) => ObjectId.isValid(String(id));
 
 const toPosInt = (val, def) => {
@@ -26,12 +29,10 @@ const toPosInt = (val, def) => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 };
 
-// Escape a string
+// escape for regex
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/**
- * DB-side search with paging, matches by courseId | courseName | professor (case-insensitive).
- */
+// DB-side search with paging
 async function findCoursesByQuery(q, page = 1, pageSize = 10) {
   const col = await coursesCol();
   const rx = new RegExp(esc(q), 'i');
@@ -48,13 +49,13 @@ async function findCoursesByQuery(q, page = 1, pageSize = 10) {
   return { total, items };
 }
 
-// Pages / HTML routes
+// ---------- Pages / HTML routes (kept from main) ----------
 
-// GET /courses/allCourses
+// GET /courses/allCourses  (renders list)
 router.get('/allCourses', async (req, res) => {
   try {
-    const page = Math.max(1, Number(req.query.page || 1));
-    const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize || 10)));
+    const page = toPosInt(req.query.page, 1);
+    const pageSize = Math.min(50, toPosInt(req.query.pageSize, 10));
     const searchTerm = (req.query.searchTerm || '').trim();
 
     if (searchTerm) {
@@ -73,21 +74,21 @@ router.get('/allCourses', async (req, res) => {
   }
 });
 
-// GET /courses/search
+// GET /courses/search (render form)
 router.get('/search', (req, res) => {
   const q = (req.query.q || '').trim();
   if (q) return res.redirect(`/courses/search/results?q=${encodeURIComponent(q)}`);
   return res.render('courses/search', { title: 'Search Courses' });
 });
 
-// POST /courses/search
+// POST /courses/search (redirect to results)
 router.post('/search', (req, res) => {
   const q = (req.body.q || '').trim();
   const url = q ? `/courses/search/results?q=${encodeURIComponent(q)}` : '/courses/search';
   res.redirect(url);
 });
 
-//GET /courses/search/results
+// GET /courses/search/results (render results)
 router.get('/search/results', async (req, res) => {
   try {
     const qRaw = (req.query.q || '').trim();
@@ -105,9 +106,9 @@ router.get('/search/results', async (req, res) => {
 
     const { total, items } = await findCoursesByQuery(q, page, pageSize);
 
-    const itemsWithLinks = items.map(d => ({
+    const itemsWithLinks = items.map((d) => ({
       ...d,
-      idStr: String(d._id)
+      idStr: String(d._id),
     }));
 
     const hasPrev = page > 1;
@@ -137,7 +138,7 @@ router.get('/search/results', async (req, res) => {
   }
 });
 
-// GET /courses
+// ---------- JSON API list with optional search ----------
 router.get('/', async (req, res) => {
   try {
     const page = toPosInt(req.query.page, 1);
@@ -159,7 +160,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /courses/:id
+// ---------- Course page ----------
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -175,9 +176,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Admin create/update/delete
-
-// POST /courses
+// ---------- Admin create/update/delete (Task 6 will add role checks) ----------
 router.post('/', async (req, res) => {
   try {
     const {
@@ -205,7 +204,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /courses/:id
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -222,6 +220,7 @@ router.put('/:id', async (req, res) => {
     } = req.body;
 
     const updated = await updateCourse(
+      String(id),
       String(adminId),
       String(courseId),
       String(courseName),
@@ -236,53 +235,49 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /courses/:id
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
-    const result = await removeCourse(id);
+    const result = await removeCourse(String(id));
     res.json(result);
   } catch (e) {
     res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-// Embedded comments
+// ---------- Embedded comments (with protections) ----------
 
-// GET /courses/:courseId/comments
+// list comments
 router.get('/:courseId/comments', async (req, res) => {
   try {
     const { courseId } = req.params;
     if (!isValidId(courseId)) return res.status(400).json({ error: 'Invalid course id' });
-    const list = await getCommentsByCourse(courseId);
+    const list = await getCommentsByCourse(String(courseId));
     res.json(list);
   } catch (e) {
     res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-// POST /courses/:courseId/comments
-router.post('/:courseId/comments', async (req, res) => {
+// create comment — must be logged in; userId from session only
+router.post('/:courseId/comments', requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     if (!isValidId(courseId)) return res.status(400).json({ error: 'Invalid course id' });
 
-    const { userId, text, rating } = req.body;
-    const newComment = await createComment(
-      String(userId),
-      String(courseId),
-      String(text),
-      rating ?? null
-    );
+    const userId = req.session.user._id; // <- do NOT trust body.userId
+    const { text, rating } = req.body;
+
+    const newComment = await createComment(String(userId), String(courseId), String(text), rating ?? null);
     res.status(201).json(newComment);
   } catch (e) {
     res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-// PUT /courses/:courseId/comments/:commentId
-router.put('/:courseId/comments/:commentId', async (req, res) => {
+// update comment — owner only
+router.put('/:courseId/comments/:commentId', requireAuth, requireCommentOwner, async (req, res) => {
   try {
     const { courseId, commentId } = req.params;
     if (!isValidId(courseId) || !isValidId(commentId))
@@ -296,38 +291,8 @@ router.put('/:courseId/comments/:commentId', async (req, res) => {
   }
 });
 
-// POST /courses/:courseId/comments/:commentId/like
-router.post('/:courseId/comments/:commentId/like', async (req, res) => {
-  try {
-    const { courseId, commentId } = req.params;
-    const { userId } = req.body;
-    if (!isValidId(courseId) || !isValidId(commentId))
-      return res.status(400).json({ error: 'Invalid id' });
-
-    const updated = await likeComment(String(courseId), String(commentId), String(userId));
-    res.json(updated);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
-});
-
-// POST /courses/:courseId/comments/:commentId/dislike
-router.post('/:courseId/comments/:commentId/dislike', async (req, res) => {
-  try {
-    const { courseId, commentId } = req.params;
-    const { userId } = req.body;
-    if (!isValidId(courseId) || !isValidId(commentId))
-      return res.status(400).json({ error: 'Invalid id' });
-
-    const updated = await dislikeComment(String(courseId), String(commentId), String(userId));
-    res.json(updated);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
-});
-
-// DELETE /courses/:courseId/comments/:commentId
-router.delete('/:courseId/comments/:commentId', async (req, res) => {
+// delete comment — owner only
+router.delete('/:courseId/comments/:commentId', requireAuth, requireCommentOwner, async (req, res) => {
   try {
     const { courseId, commentId } = req.params;
     if (!isValidId(courseId) || !isValidId(commentId))
@@ -340,4 +305,35 @@ router.delete('/:courseId/comments/:commentId', async (req, res) => {
   }
 });
 
+// like/dislike — logged in; userId from session only
+router.post('/:courseId/comments/:commentId/like', requireAuth, async (req, res) => {
+  try {
+    const { courseId, commentId } = req.params;
+    if (!isValidId(courseId) || !isValidId(commentId))
+      return res.status(400).json({ error: 'Invalid id' });
+
+    const userId = req.session.user._id;
+    const updated = await likeComment(String(courseId), String(commentId), String(userId));
+    res.json(updated);
+  } catch (e) {
+    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+  }
+});
+
+router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, res) => {
+  try {
+    const { courseId, commentId } = req.params;
+    if (!isValidId(courseId) || !isValidId(commentId))
+      return res.status(400).json({ error: 'Invalid id' });
+
+    const userId = req.session.user._id;
+    const updated = await dislikeComment(String(courseId), String(commentId), String(userId));
+    res.json(updated);
+  } catch (e) {
+    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+  }
+});
+
 export default router;
+
+
