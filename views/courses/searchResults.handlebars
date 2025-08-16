@@ -1,0 +1,41 @@
+<h1>Search Results</h1>
+
+{{#if error}}
+  <div class="alert alert-danger">{{error}}</div>
+{{/if}}
+
+{{#if q}}
+  <p class="text-muted">Showing results for <strong>{{q}}</strong> (page {{page}})</p>
+{{/if}}
+
+{{#if items.length}}
+  <ul class="list-group mb-3">
+    {{#each items}}
+      <li class="list-group-item">
+        <div class="fw-bold">
+          <!-- 🔗 link to the course page -->
+          <a href="/courses/{{idStr}}" class="text-decoration-none">
+            {{courseName}}
+          </a>
+          <span class="text-muted">({{courseId}})</span>
+        </div>
+        <div class="small text-muted">
+          Professor: {{professor}}
+          {{#if courseRating}} | Rating: {{courseRating}}{{/if}}
+          {{#if reviewCount}} | Reviews: {{reviewCount}}{{/if}}
+        </div>
+      </li>
+    {{/each}}
+  </ul>
+
+  <nav aria-label="Search pagination" class="d-flex gap-2">
+    {{#if hasPrev}}
+      <a class="btn btn-outline-secondary" href="{{prevLink}}">Prev</a>
+    {{/if}}
+    {{#if hasNext}}
+      <a class="btn btn-outline-secondary" href="{{nextLink}}">Next</a>
+    {{/if}}
+  </nav>
+{{else}}
+  <p class="text-muted">No courses matched your search.</p>
+{{/if}}
