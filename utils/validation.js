@@ -201,11 +201,11 @@ export const validateName = (name) => {
 export const validatePasswordInputs = (password) => {
 	password = validateString('password', password);
 	// Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.
-	if (password.length < 8) throw `Error: ${msgVal} must be at least 8 characters.`;
+	if (password.length < 8) throw `Error: ${password} must be at least 8 characters.`;
 	if (/\s/.test(password)) throw `Error: password cannot contain spaces.`;
 	let passwordFormat = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$@!%&*?])[A-Za-z\d#$@!%&*?]{8,30}$/;
 	if (!password.match(passwordFormat))
-		throw `Error: ${msgVal} must contain at least one lowercase letter, one uppercase letter, one number, and one special character.`;
+		throw `Error: ${password} must contain at least one lowercase letter, one uppercase letter, one number, and one special character.`;
 	return password;
 };
 
@@ -217,7 +217,7 @@ export const validatePasswordInputs = (password) => {
  */
 export const validateRole = (role) => {
 	role = validateString('Role', role);
-	if (role !== 'admin' && role !== 'user')
+	if (role !== 'admin' && role !== 'student')
 		throw `Error: ${role} must be either 'student' or 'admin'.`;
 	return role;
 };

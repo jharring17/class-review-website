@@ -30,7 +30,6 @@ const createCourse = async (
 	courseId,
 	courseName,
 	courseDescription,
-	meetingTime,
 	imgLink,
 	professor
 ) => {
@@ -45,7 +44,6 @@ const createCourse = async (
 	if (exists) throw `Error: cannot have duplicate courseIds.`
 	courseName = validation.validateCourseName(courseName)
 	courseDescription = validation.validateCourseDescription(courseDescription)
-	//todo: validate meetingTime
 	imgLink = await validation.validateImgLink(imgLink)
 	professor = validation.validateProfessor(professor)
 
@@ -55,7 +53,6 @@ const createCourse = async (
 		courseId: courseId,
 		courseName: courseName,
 		courseDescription: courseDescription,
-		meetingTime: meetingTime,
 		imgLink: imgLink,
 		professor: professor,
 		courseRating: null,
@@ -106,7 +103,7 @@ const getCourseById = async (courseId) => {
 
 /**
  * Updates a course in the courses collection.
- * @param {objectId} adminId The id of the admin used to build the course.
+ * @param {ObjectId} adminId The id of the admin used to build the course.
  * @param {string} courseId A unique identifier applied to a course (ex: cs546)
  * @param {string} courseName The name of the course.
  * @param {string} courseDescription The description of the course.
@@ -121,7 +118,6 @@ const updateCourse = async (
 	courseId,
 	courseName,
 	courseDescription,
-	meetingTime,
 	imgLink,
 	professor
 ) => {
@@ -135,7 +131,6 @@ const updateCourse = async (
 	if (exists) throw `Error: cannot have duplicate courseIds.`
 	courseName = validation.validateCourseName(courseName)
 	courseDescription = validation.validateCourseDescription(courseDescription)
-	//todo: validate meetingTime
 	imgLink = await validation.validateImgLink(imgLink)
 	professor = validation.validateProfessor(professor)
 
@@ -145,7 +140,6 @@ const updateCourse = async (
 		courseId: courseId,
 		courseName: courseName,
 		courseDescription: courseDescription,
-		meetingTime: meetingTime,
 		imgLink: imgLink,
 		professor: professor,
 	};
@@ -170,7 +164,6 @@ const updateCourse = async (
  */
 const removeCourse = async (courseId) => {
 	// validate the course ID
-		// Validate courseId is a valid string and objectId
 	courseId = validation.validateString("courseId", courseId)
 	if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`
 
@@ -581,6 +574,7 @@ export {
 
   //comments (embedded)
   createComment,
+  updateCourseComments,
   getCommentsByCourse,
   updateComment,
   likeComment,

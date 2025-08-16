@@ -1,35 +1,64 @@
 <html lang='en'>
 	<head>
 		<meta charset='UTF-8' />
+		<meta name='viewport' content='width=device-width, initial-scale=1' />
 		<title>{{title}}</title>
+
+		<!-- Bootstrap CSS -->
+		<link
+			rel='stylesheet'
+			href='https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css'
+		/>
+		<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js'></script>
+
+		<!-- Your custom CSS -->
 		<link rel='stylesheet' href='/public/css/styles.css' />
 		<link rel='stylesheet' href='/public/css/stats.css' />
 	</head>
 	<body>
-		<header>
-			<h1>Class Review Website</h1>
-			<nav>
-				<ul>
-					<li><a href='/'>Home</a></li>
-					<li><a href='/stats/dashboard'>Stats</a></li>
-					<li><a href='/courses'>Courses</a></li>
-                    <li><a href='/courses/search'>Search</a></li>
+		<!-- Navbar -->
+		<nav class='navbar navbar-expand-lg navbar-light bg-light'>
+			<a class='navbar-brand' href='/'>Class Review</a>
+			<div class='collapse navbar-collapse' id='navbarNav'>
+				<ul class='navbar-nav'>
+					<li class='nav-item active'><a
+							class='nav-link'
+							href='/stats/dashboard'
+						>Stats</a></li>
+					<li class='nav-item active'><a
+							class='nav-link'
+							href='/course/allCourses'
+						>Courses</a></li>
+					<li class='nav-item active'><a
+							class='nav-link'
+							href='/courses/search'
+						>Search</a></li>
 					{{#if user}}
-						<li><a href='/logout'>Logout</a></li>
+						<li class='nav-item active'><a
+								class='nav-link'
+								href='/logout'
+							>Logout</a></li>
 					{{else}}
-						<li><a href='/login'>Login</a></li>
-						<li><a href='/register'>Register</a></li>
+						<li class='nav-item active'><a class='nav-link' href='/login'>Login</a></li>
+						<li class='nav-item active'><a
+								class='nav-link'
+								href='/register'
+							>Register</a></li>
 					{{/if}}
 				</ul>
-			</nav>
-		</header>
+			</div>
+		</nav>
 
-		<main>
+		<!-- Main content -->
+		<main class='container my-4'>
 			{{{body}}}
 		</main>
 
-		<footer>
-			<p>&copy; {{year}} Class Review Website</p>
+		<!-- Footer -->
+		<footer class='bg-dark text-light py-3 mt-auto'>
+			<div class='container text-center'>
+				<p class='mb-0'>&copy; {{year}} Class Review Website</p>
+			</div>
 		</footer>
 	</body>
 </html>
