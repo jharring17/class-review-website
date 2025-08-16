@@ -17,7 +17,7 @@ import {
 } from '../data/courses.js';
 
 import { courses as coursesCol } from '../config/mongoCollections.js';
-import { requireAuth, requireCommentOwner } from '../middleware/auth.js';
+import { requireAuth, requireRole, requireCommentOwner } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -176,8 +176,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ---------- Admin create/update/delete (Task 6 will add role checks) ----------
-router.post('/', async (req, res) => {
+// ---------- Admin create/update/delete (role checks added) ----------
+router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const {
       adminId,
@@ -204,7 +204,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
@@ -235,7 +235,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
@@ -335,5 +335,3 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
 });
 
 export default router;
-
-
