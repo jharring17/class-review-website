@@ -1,0 +1,11 @@
+<h1>Search Courses</h1>
+
+{{#if error}}
+  <p class="error">{{error}}</p>
+{{/if}}
+
+<form action="/courses/search-html" method="get" class="search-form">
+  <label for="q">Search by ID, name, or professor</label>
+  <input id="q" name="q" type="text" placeholder="e.g., CS-546 or Jane" required>
+  <button type="submit">Search</button>
+</form>

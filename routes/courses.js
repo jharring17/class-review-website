@@ -18,61 +18,45 @@ import {
 
 const router = Router();
 
-//Helpers 
+// Helpers
 const isValidId = (id) => ObjectId.isValid(String(id));
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const toPosInt = (v, def) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
+};
 
-//Courses
+// common DB search used by both pages
+async function findCoursesByQuery(q, page, pageSize) {
+  const col = await coursesCol();
+  const rx = new RegExp(esc(q), 'i');
 
-// GET /courses  (paginated; also supports ?searchTerm=)
-router.get('/', async (req, res) => {
-  try {
-    const page = Math.max(1, Number(req.query.page || 1));
-    const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize || 10)));
-    const searchTerm = (req.query.searchTerm || '').trim();
+  const cursor = col.find({
+    $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }]
+  });
 
-    // If searching, do it at the DB layer
-    if (searchTerm) {
-      const col = await coursesCol();
-      const rx = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      const cursor = col.find({ $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }] });
-      const total = await cursor.count();
-      const items = await cursor.skip((page - 1) * pageSize).limit(pageSize).toArray();
-      return res.json({ page, pageSize, total, items });
-    }
+  const total = await cursor.count();
+  const items = await cursor.skip((page - 1) * pageSize).limit(pageSize).toArray();
 
-    // Otherwise, get all and page in memory (can be swapped for DB paging later)
-    const all = await getAllCourses();
-    const total = all.length;
-    const start = (page - 1) * pageSize;
-    const items = all.slice(start, start + pageSize);
-    res.json({ page, pageSize, total, items });
-  } catch (e) {
-    res.status(500).json({ error: e?.toString?.() || 'Internal error' });
-  }
-});
+  return { total, items };
+}
 
 // ---- HTML search page ----
 
 // GET /courses/search
 router.get('/search', async (req, res) => {
   try {
-    const q = (req.query.q || '').trim();
-    const page = Math.max(1, Number(req.query.page || 1));
-    const pageSize = Math.min(50, Math.max(1, Number(req.query.pageSize || 10)));
+    const qRaw = (req.query.q || '').trim();
+    const q = qRaw.length > 64 ? qRaw.slice(0, 64) : qRaw;
+    const page = toPosInt(req.query.page, 1);
+    const pageSize = Math.min(50, toPosInt(req.query.pageSize, 10));
 
     if (!q) {
-      return res.render('courses/search', { title: 'Search Courses' });
+      // render empty search page
+      return res.render('courses/search', { title: 'Search Courses', q: '' });
     }
 
-    const col = await coursesCol();
-    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const cursor = col.find({ $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }] });
-
-    const total = await cursor.count();
-    const items = await cursor
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .toArray();
+    const { total, items } = await findCoursesByQuery(q, page, pageSize);
 
     return res.render('courses/search', {
       title: 'Search Courses',
@@ -83,7 +67,9 @@ router.get('/search', async (req, res) => {
       items
     });
   } catch (e) {
-    return res.status(500).render('error', { title: 'Error', error: e?.toString?.() || 'Internal error' });
+    return res
+      .status(500)
+      .render('error', { title: 'Error', error: e?.toString?.() || 'Internal server error' });
   }
 });
 
@@ -94,20 +80,93 @@ router.post('/search', (req, res) => {
   res.redirect(url);
 });
 
-// GET /courses/:id
+// GET /courses/search/results
+router.get('/search/results', async (req, res) => {
+  try {
+    const qRaw = (req.query.q || '').trim();
+    const q = qRaw.length > 64 ? qRaw.slice(0, 64) : qRaw;
+    const page = toPosInt(req.query.page, 1);
+    const pageSize = Math.min(50, toPosInt(req.query.pageSize, 10));
+
+    if (!q) {
+      return res.status(400).render('courses/search', {
+        title: 'Search Courses',
+        q: '',
+        error: 'Please enter a search term.'
+      });
+    }
+
+    const { total, items } = await findCoursesByQuery(q, page, pageSize);
+
+    const hasPrev = page > 1;
+    const hasNext = page * pageSize < total;
+
+    return res.render('courses/searchResults', {
+      title: `Search: ${q}`,
+      q,
+      page,
+      pageSize,
+      total,
+      items,
+      hasPrev,
+      hasNext,
+      prevLink: hasPrev
+        ? `/courses/search/results?q=${encodeURIComponent(q)}&page=${page - 1}&pageSize=${pageSize}`
+        : null,
+      nextLink: hasNext
+        ? `/courses/search/results?q=${encodeURIComponent(q)}&page=${page + 1}&pageSize=${pageSize}`
+        : null
+    });
+  } catch (e) {
+    console.error('GET /courses/search/results error:', e);
+    return res
+      .status(500)
+      .render('error', { title: 'Error', error: e?.toString?.() || 'Internal server error' });
+  }
+});
+
+// Courses
+
+// GET /courses
+router.get('/', async (req, res) => {
+  try {
+    const page = toPosInt(req.query.page, 1);
+    const pageSize = Math.min(50, toPosInt(req.query.pageSize, 10));
+    const searchTerm = (req.query.searchTerm || '').trim();
+
+    if (searchTerm) {
+      // DB-side search for JSON variant
+      const { total, items } = await findCoursesByQuery(searchTerm, page, pageSize);
+      return res.json({ page, pageSize, total, items });
+    }
+
+    // Otherwise just list/paginate all (simple in-memory paging)
+    const all = await getAllCourses();
+    const total = all.length;
+    const start = (page - 1) * pageSize;
+    const items = all.slice(start, start + pageSize);
+    return res.json({ page, pageSize, total, items });
+  } catch (e) {
+    return res.status(500).json({ error: e?.toString?.() || 'Internal error' });
+  }
+});
+
+// Course by ID
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
     const course = await getCourseById(id);
-    res.json(course);
+    return res.json(course);
   } catch (e) {
-    res.status(404).json({ error: e?.toString?.() || 'Course not found' });
+    return res.status(404).json({ error: e?.toString?.() || 'Course not found' });
   }
 });
 
-// POST /courses  [Admin]
-// Body: { adminId, courseId, courseName, courseDescription, meetingTime, imgLink, professor }
+// Admin create/update/delete
+
+// POST /courses
 router.post('/', async (req, res) => {
   try {
     const {
@@ -124,13 +183,13 @@ router.post('/', async (req, res) => {
       String(imgLink),
       String(professor)
     );
-    res.status(201).json(created);
+    return res.status(201).json(created);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-// PUT /courses/:id  [Admin]
+// PUT /courses/:id
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,25 +209,25 @@ router.put('/:id', async (req, res) => {
       String(imgLink),
       String(professor)
     );
-    res.json(updated);
+    return res.json(updated);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-// DELETE /courses/:id  [Admin]
+// DELETE /courses/:id
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
     const result = await removeCourse(id);
-    res.json(result);
+    return res.json(result);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
-//Embedded Comments (under /courses/:courseId/...)
+// Embedded comments
 
 // GET /courses/:courseId/comments
 router.get('/:courseId/comments', async (req, res) => {
@@ -176,14 +235,13 @@ router.get('/:courseId/comments', async (req, res) => {
     const { courseId } = req.params;
     if (!isValidId(courseId)) return res.status(400).json({ error: 'Invalid course id' });
     const list = await getCommentsByCourse(courseId);
-    res.json(list);
+    return res.json(list);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
 // POST /courses/:courseId/comments
-// Body: { userId, text, rating? }
 router.post('/:courseId/comments', async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -191,9 +249,9 @@ router.post('/:courseId/comments', async (req, res) => {
 
     const { userId, text, rating } = req.body;
     const newComment = await createComment(String(userId), String(courseId), String(text), rating ?? null);
-    res.status(201).json(newComment);
+    return res.status(201).json(newComment);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
@@ -204,9 +262,9 @@ router.put('/:courseId/comments/:commentId', async (req, res) => {
     if (!isValidId(courseId) || !isValidId(commentId)) return res.status(400).json({ error: 'Invalid id' });
     const { newText } = req.body;
     const updated = await updateComment(String(courseId), String(commentId), String(newText));
-    res.json(updated);
+    return res.json(updated);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
@@ -217,9 +275,9 @@ router.post('/:courseId/comments/:commentId/like', async (req, res) => {
     const { userId } = req.body;
     if (!isValidId(courseId) || !isValidId(commentId)) return res.status(400).json({ error: 'Invalid id' });
     const updated = await likeComment(String(courseId), String(commentId), String(userId));
-    res.json(updated);
+    return res.json(updated);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
@@ -230,9 +288,9 @@ router.post('/:courseId/comments/:commentId/dislike', async (req, res) => {
     const { userId } = req.body;
     if (!isValidId(courseId) || !isValidId(commentId)) return res.status(400).json({ error: 'Invalid id' });
     const updated = await dislikeComment(String(courseId), String(commentId), String(userId));
-    res.json(updated);
+    return res.json(updated);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
@@ -242,9 +300,9 @@ router.delete('/:courseId/comments/:commentId', async (req, res) => {
     const { courseId, commentId } = req.params;
     if (!isValidId(courseId) || !isValidId(commentId)) return res.status(400).json({ error: 'Invalid id' });
     const result = await deleteComment(String(courseId), String(commentId));
-    res.json(result);
+    return res.json(result);
   } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+    return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
   }
 });
 
