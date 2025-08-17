@@ -4,6 +4,31 @@
 import { ObjectId } from 'mongodb';
 import { courses as coursesCol } from '../config/mongoCollections.js';
 
+// Helpers
+function toObjectId(id) {
+  try {
+    const s = String(id);
+    if (!ObjectId.isValid(s)) return null;
+    return new ObjectId(s);
+  } catch {
+    return null;
+  }
+}
+function hasRole(user, role) {
+  if (!user) return false;
+  return String(user.role || '').toLowerCase() === String(role).toLowerCase();
+}
+
+// Expose user to handlebars views
+export function setUserLocals(req, _res, next) {
+  const user = req.session?.user || null;
+  if (!req.app?.locals) req.app.locals = {};
+
+  _res.locals.user = user;
+  _res.locals.isAdmin = hasRole(user, 'admin');
+  next();
+}
+
 // Must be logged in
 export function requireAuth(req, res, next) {
   if (!req.session || !req.session.user) {
@@ -23,6 +48,9 @@ export function requireRole(role) {
     next();
   };
 }
+
+// Shorthand for admins
+export const requireAdmin = requireRole('admin');
 
 // Only the comment owner may modify/delete their comment.
 export async function requireCommentOwner(req, res, next) {
@@ -57,5 +85,32 @@ export async function requireCommentOwner(req, res, next) {
   }
 }
 
+// Only admin or course owner (creator) can modify the course
+export async function requireCourseOwnerOrAdmin(req, res, next) {
+  try {
+    const user = req.session?.user;
+    if (!user) return res.status(401).json({error: 'Authentication required.'});
+
+    if (hasRole(user, 'admin')) {
+      return next();
+    }
+
+    const courseId = toObjectId(req.params.id || req.params.courseId);
+    if (!courseId) return res.status(400).json({error: 'Invalid course id.'});
+
+    const col = await coursesCol();
+    const course = await col.findOne(courseId, {projection: {adminId: 1}});
+    if (!course) return res.status(404).json({error: 'Course not found.'});
+
+    if (String(course.adminId) !== String(user._id)) {
+      return res.status(403).json({error: 'Forbidden: not course owner.'});
+    }
+
+    next();
+  } catch (e) {
+    console.error('requireCourseOwnerOrAdmin error:', e);
+    return res.status(500).json({error: 'Internal server error'});
+  }
+}
 
 
