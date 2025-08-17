@@ -142,6 +142,9 @@ const loginUser = async (username, password) => {
 	username = validateString('username', username);
 	password = validateString('password', password);
 
+	console.log('in data functions' + username);
+	console.log(password);
+
 	// Gets the users collection.
 	const usersCollection = await users();
 
@@ -160,7 +163,10 @@ const loginUser = async (username, password) => {
 			firstName: user.firstName,
 			lastName: user.lastName,
 			username: user.username,
+			bio: user.bio,
+			imgLink: user.imgLink,
 			role: user.role,
+			lastViewed: user.lastViewed,
 		};
 	} else {
 		throw 'Error: Either the username or password is invalid.';

@@ -1,0 +1,69 @@
+<h2 class='mb-4'>Edit Profile</h2>
+<div class='card shadow-sm p-4'>
+	<form id='edit-profile-form' action='/user/editProfile/{{user._id}}' method='POST'>
+		<div class='mb-3'>
+			<label for='firstNameInput' class='form-label'>First Name</label>
+			<input
+				type='text'
+				class='form-control'
+				id='firstNameInput'
+				name='firstNameInput'
+				value='{{firstName}}'
+				required
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='lastNameInput' class='form-label'>Last Name</label>
+			<input
+				type='text'
+				class='form-control'
+				id='lastNameInput'
+				name='lastNameInput'
+				value='{{lastName}}'
+				required
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='usernameInput' class='form-label'>Username</label>
+			<input
+				type='text'
+				class='form-control'
+				id='usernameInput'
+				name='usernameInput'
+				value='{{username}}'
+				required
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='roleInput' class='form-label'>Role</label>
+			<select class='form-select' id='roleInput' name='roleInput' required>
+				<option value='student'>Student</option>
+				<option value='admin'>Admin</option>
+			</select>
+		</div>
+
+		<div class='mb-3'>
+			<label for='bioInput' class='form-label'>Bio</label>
+			<textarea class='form-control' id='bioInput' name='bioInput' rows='4'>{{bio}}</textarea>
+		</div>
+
+		<div class='mb-3'>
+			<label for='imglinkInput' class='form-label'>Image Link</label>
+			<input
+				type='url'
+				class='form-control'
+				id='imglinkInput'
+				name='imglinkInput'
+				value='{{imgLink}}'
+			/>
+		</div>
+
+		<div class='d-flex justify-content-between'>
+			<a href='/user/{{user._id}}' class='btn btn-outline-secondary'>Cancel</a>
+			<button type='submit' class='btn btn-primary'>Save Changes</button>
+		</div>
+	</form>
+</div>
