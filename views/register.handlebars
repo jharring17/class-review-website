@@ -1,43 +1,71 @@
-{{!-- registration.handlebars --}}
+<h2 class='mb-4'>Register</h2>
+<div class='card shadow-sm p-4'>
+	<form id='register-form' action='/user/register' method='POST'>
+		<div class='mb-3'>
+			<label for='firstName' class='form-label'>First Name</label>
+			<input type='text' class='form-control' id='firstName' name='firstName' required />
+		</div>
 
-<p id='siteDescription'>
-	Register a new account to access the system. Please fill in all the fields below.
-</p>
+		<div class='mb-3'>
+			<label for='lastName' class='form-label'>Last Name</label>
+			<input type='text' class='form-control' id='lastName' name='lastName' required />
+		</div>
 
-<form id='signup-form' name='signup-form' action='/register' method='POST'>
-	<label for='firstName'>First Name:</label>
-	<input type='text' id='firstName' name='firstName' required />
+		<div class='mb-3'>
+			<label for='username' class='form-label'>Username</label>
+			<input type='text' class='form-control' id='username' name='username' required />
+		</div>
 
-	<label for='lastName'>Last Name:</label>
-	<input type='text' id='lastName' name='lastName' required />
+		<div class='mb-3'>
+			<label for='password' class='form-label'>Password</label>
+			<input type='password' class='form-control' id='password' name='password' required />
+		</div>
 
-	<label for='username'>Username:</label>
-	<input type='text' id='username' name='username' required />
+		<div class='mb-3'>
+			<label for='confirmPassword' class='form-label'>Confirm Password</label>
+			<input
+				type='password'
+				class='form-control'
+				id='confirmPassword'
+				name='confirmPassword'
+				required
+			/>
+		</div>
 
-	<label for='password'>Password:</label>
-	<input type='password' id='password' name='password' required />
+		<div class='mb-3'>
+			<label for='role' class='form-label'>Role</label>
+			<select class='form-select' id='role' name='role' required>
+				<option value='' selected disabled>Select a role</option>
+				<option value='student'>Student</option>
+				<option value='admin'>Admin</option>
+			</select>
+		</div>
 
-	<label for='confirmPassword'>Confirm Password:</label>
-	<input type='password' id='confirmPassword' name='confirmPassword' required />
+		<div class='mb-3'>
+			<label for='bio' class='form-label'>Bio</label>
+			<textarea
+				class='form-control'
+				id='bio'
+				name='bio'
+				rows='4'
+				placeholder='Tell us about yourself...'
+			></textarea>
+		</div>
 
-	<label for='bio'>Bio:</label>
-	<textarea id='bio' name='bio' rows='3' placeholder='Tell us a bit about yourself'></textarea>
+		<div class='mb-3'>
+			<label for='imgLink' class='form-label'>Image Link</label>
+			<input
+				type='url'
+				class='form-control'
+				id='imgLink'
+				name='imgLink'
+				placeholder='https://example.com/profile.jpg'
+			/>
+		</div>
 
-	<label for='imgLink'>Profile Image URL:</label>
-	<input type='url' id='imgLink' name='imgLink' placeholder='https://example.com/photo.jpg' />
-
-	<label for='role'>Role:</label>
-	<select id='role' name='role' required>
-		<option value='admin'>Admin</option>
-		<option value='student'>Student</option>
-	</select>
-
-	<button id='submitButton' name='submitButton' type='submit'>Register</button>
-</form>
-
-<p>
-	<a href='/login'>Already have an account? Click here to sign-in</a>
-</p>
-<p>
-	<a href='/'>Return to Home</a>
-</p>
+		<div class='d-flex justify-content-between'>
+			<a href='/' class='btn btn-outline-secondary'>Cancel</a>
+			<button type='submit' class='btn btn-success'>Register</button>
+		</div>
+	</form>
+</div>

@@ -1,0 +1,69 @@
+<h2 class='mb-4'>Update Course</h2>
+<div class='card shadow-sm p-4'>
+	<form id='update-course-form' action='/course/updateCourse/{{courseId}}' method='POST'>
+
+		<div class='mb-3'>
+			<label for='courseId' class='form-label'>Course ID</label>
+			<input
+				type='text'
+				class='form-control'
+				id='courseId'
+				name='courseId'
+				value='{{course.courseId}}'
+				required
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='courseName' class='form-label'>Course Name</label>
+			<input
+				type='text'
+				class='form-control'
+				id='courseName'
+				name='courseName'
+				value='{{course.courseName}}'
+				required
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='courseDescription' class='form-label'>Course Description</label>
+			<textarea
+				class='form-control'
+				id='courseDescription'
+				name='courseDescription'
+				rows='4'
+				required
+			>{{course.courseDescription}}</textarea>
+		</div>
+
+		<div class='mb-3'>
+			<label for='imgLink' class='form-label'>Image Link</label>
+			<input
+				type='url'
+				class='form-control'
+				id='imgLink'
+				name='imgLink'
+				value='{{course.imgLink}}'
+			/>
+		</div>
+
+		<div class='mb-3'>
+			<label for='professor' class='form-label'>Professor</label>
+			<input
+				type='text'
+				class='form-control'
+				id='professor'
+				name='professor'
+				value='{{course.professor}}'
+				required
+			/>
+		</div>
+
+		<div class='d-flex justify-content-between'>
+			<a href='/course/{{courseId}}' class='btn btn-outline-secondary'>Cancel</a>
+			<button type='submit' class='btn btn-primary'>Update Course</button>
+		</div>
+
+	</form>
+</div>
