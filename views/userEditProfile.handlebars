@@ -2,61 +2,61 @@
 <div class='card shadow-sm p-4'>
 	<form id='edit-profile-form' action='/user/editProfile/{{user._id}}' method='POST'>
 		<div class='mb-3'>
-			<label for='firstNameInput' class='form-label'>First Name</label>
+			<label for='firstName' class='form-label'>First Name</label>
 			<input
 				type='text'
 				class='form-control'
-				id='firstNameInput'
-				name='firstNameInput'
+				id='firstName'
+				name='firstName'
 				value='{{firstName}}'
 				required
 			/>
 		</div>
 
 		<div class='mb-3'>
-			<label for='lastNameInput' class='form-label'>Last Name</label>
+			<label for='lastName' class='form-label'>Last Name</label>
 			<input
 				type='text'
 				class='form-control'
-				id='lastNameInput'
-				name='lastNameInput'
+				id='lastName'
+				name='lastName'
 				value='{{lastName}}'
 				required
 			/>
 		</div>
 
 		<div class='mb-3'>
-			<label for='usernameInput' class='form-label'>Username</label>
+			<label for='username' class='form-label'>Username</label>
 			<input
 				type='text'
 				class='form-control'
-				id='usernameInput'
-				name='usernameInput'
+				id='username'
+				name='username'
 				value='{{username}}'
 				required
 			/>
 		</div>
 
 		<div class='mb-3'>
-			<label for='roleInput' class='form-label'>Role</label>
-			<select class='form-select' id='roleInput' name='roleInput' required>
+			<label for='role' class='form-label'>Role</label>
+			<select class='form-select' id='role' name='role' required>
 				<option value='student'>Student</option>
 				<option value='admin'>Admin</option>
 			</select>
 		</div>
 
 		<div class='mb-3'>
-			<label for='bioInput' class='form-label'>Bio</label>
-			<textarea class='form-control' id='bioInput' name='bioInput' rows='4'>{{bio}}</textarea>
+			<label for='bio' class='form-label'>Bio</label>
+			<textarea class='form-control' id='bio' name='bio' rows='4'>{{bio}}</textarea>
 		</div>
 
 		<div class='mb-3'>
-			<label for='imglinkInput' class='form-label'>Image Link</label>
+			<label for='imgLink' class='form-label'>Image Link</label>
 			<input
 				type='url'
 				class='form-control'
-				id='imglinkInput'
-				name='imglinkInput'
+				id='imgLink'
+				name='imgLink'
 				value='{{imgLink}}'
 			/>
 		</div>

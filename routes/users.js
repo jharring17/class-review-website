@@ -2,7 +2,7 @@
 import express from 'express';
 import { createUser, getUserById, updateUser, loginUser } from '../data/users.js';
 import { requireAuth } from '../middleware/auth.js';
-import * as validation from '../utils/validation.js'
+import * as validation from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -85,11 +85,12 @@ router.get('/editProfile/:id', requireAuth, async (req, res) => {
 
 // update the user profile
 router.post('/editProfile/:id', requireAuth, async (req, res) => {
+	console.log('Editing profile for user:', req.params.id);
+	console.log(req.body);
 
-  console.log('Editing profile for user:', req.params.id);
-  console.log(req.body);
+	//! add password as a field to the form. check the passwords here. use them to populate the new user field.
 
-  try {
+	try {
 		// prevent users from updating other accounts if not logged in
 		if (!req.session.user || req.session.user._id !== req.params.id) {
 			console.log('User not authorized to edit this profile');
@@ -110,8 +111,8 @@ router.post('/editProfile/:id', requireAuth, async (req, res) => {
 			console.log(e);
 		}
 
-		// attempt to update the user with validated credentials
-		const updated = await updateUser(req.session.user._id, {
+		// print all the fields
+		console.log('Editing user profile:', {
 			firstName,
 			lastName,
 			username,
@@ -119,6 +120,17 @@ router.post('/editProfile/:id', requireAuth, async (req, res) => {
 			bio,
 			imgLink,
 			role,
+		});
+
+		// attempt to update the user with validated credentials
+		const updated = await updateUser(req.session.user._id, {
+			firstName: firstName,
+			lastName: lastName,
+			username: username,
+			// password: password,
+			bio: bio,
+			imgLink: imgLink,
+			role: role,
 		});
 		console.log('User updated successfully:', updated);
 
