@@ -177,171 +177,236 @@ const removeCourse = async (courseId) => {
 };
 
 //COURSE REVIEWS AND RATINGS
+// STATS helpers (now based on comment ratings, 1 to 5)
 
-//Updated most reviewed courses - SS
 const getMostReviewedCourses = async () => {
   const coursesCollection = await courses();
-  return await coursesCollection.aggregate([
-    { $project: { courseId: 1, reviewCount: { $size: { $ifNull: ["$comments", []] } } } },
-    {
-      $group: {
-        _id: null,
-        maxReviewCount: { $max: "$reviewCount" },
-        items: { $push: { courseId: "$courseId", reviewCount: "$reviewCount" } }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        results: {
-          $filter: {
-            input: "$items",
-            as: "it",
-            cond: { $eq: ["$$it.reviewCount", "$maxReviewCount"] }
+  return await coursesCollection
+    .aggregate([
+      {
+        $project: {
+          courseId: 1,
+          reviewCount: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$comments', []] },
+                as: 'c',
+                cond: {
+                  $and: [
+                    { $isNumber: '$$c.rating' },
+                    { $gte: ['$$c.rating', 1] },
+                    { $lte: ['$$c.rating', 5] }
+                  ]
+                }
+              }
+            }
           }
         }
-      }
-    },
-    { $unwind: "$results" },
-    { $replaceRoot: { newRoot: "$results" } }
-  ]).toArray();
+      },
+      { $group: { _id: null, maxReviewCount: { $max: '$reviewCount' }, items: { $push: '$$ROOT' } } },
+      {
+        $project: {
+          _id: 0,
+          results: {
+            $filter: { input: '$items', as: 'it', cond: { $eq: ['$$it.reviewCount', '$maxReviewCount'] } }
+          }
+        }
+      },
+      { $unwind: '$results' },
+      { $replaceRoot: { newRoot: '$results' } }
+    ])
+    .toArray();
 };
 
-//Updated least reviewed courses - SS
 const getLeastReviewedCourses = async () => {
   const coursesCollection = await courses();
-  return await coursesCollection.aggregate([
-    { $project: { courseId: 1, reviewCount: { $size: { $ifNull: ["$comments", []] } } } },
-    {
-      $group: {
-        _id: null,
-        minReviewCount: { $min: "$reviewCount" },
-        items: { $push: { courseId: "$courseId", reviewCount: "$reviewCount" } }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        results: {
-          $filter: {
-            input: "$items",
-            as: "it",
-            cond: { $eq: ["$$it.reviewCount", "$minReviewCount"] }
+  return await coursesCollection
+    .aggregate([
+      {
+        $project: {
+          courseId: 1,
+          reviewCount: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$comments', []] },
+                as: 'c',
+                cond: {
+                  $and: [
+                    { $isNumber: '$$c.rating' },
+                    { $gte: ['$$c.rating', 1] },
+                    { $lte: ['$$c.rating', 5] }
+                  ]
+                }
+              }
+            }
           }
         }
-      }
-    },
-    { $unwind: "$results" },
-    { $replaceRoot: { newRoot: "$results" } }
-  ]).toArray();
+      },
+      { $group: { _id: null, minReviewCount: { $min: '$reviewCount' }, items: { $push: '$$ROOT' } } },
+      {
+        $project: {
+          _id: 0,
+          results: {
+            $filter: { input: '$items', as: 'it', cond: { $eq: ['$$it.reviewCount', '$minReviewCount'] } }
+          }
+        }
+      },
+      { $unwind: '$results' },
+      { $replaceRoot: { newRoot: '$results' } }
+    ])
+    .toArray();
 };
 
-//Added highest rated courses - SS
 const getHighestRatedCourses = async () => {
   const coursesCollection = await courses();
-  return await coursesCollection.aggregate([
-    {
-      $project: {
-        courseId: 1,
-        avgRating: {
-          $avg: {
-            $map: {
-              input: {
-                $filter: {
-                  input: { $ifNull: ["$ratings", []] },
-                  as: "r",
-                  cond: {
-                    $and: [
-                      { $gte: ["$$r.rating", 1] },
-                      { $lte: ["$$r.rating", 5] }
-                    ]
+  return await coursesCollection
+    .aggregate([
+      {
+        $project: {
+          courseId: 1,
+          avgRating: {
+            $avg: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ['$comments', []] },
+                    as: 'c',
+                    cond: {
+                      $and: [
+                        { $isNumber: '$$c.rating' },
+                        { $gte: ['$$c.rating', 1] },
+                        { $lte: ['$$c.rating', 5] }
+                      ]
+                    }
                   }
                 }
               },
-              as: "r",
-              in: "$$r.rating"
+              as: 'c',
+              in: '$$c.rating'
             }
           }
         }
-      }
-    },
-    { $match: { avgRating: { $ne: null } } },
-    {
-      $group: {
-        _id: null,
-        maxAvg: { $max: "$avgRating" },
-        items: { $push: { courseId: "$courseId", avgRating: "$avgRating" } }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        results: {
-          $filter: {
-            input: "$items",
-            as: "it",
-            cond: { $eq: ["$$it.avgRating", "$maxAvg"] }
-          }
+      },
+      { $match: { avgRating: { $ne: null } } },
+      { $group: { _id: null, maxAvg: { $max: '$avgRating' }, items: { $push: '$$ROOT' } } },
+      {
+        $project: {
+          _id: 0,
+          results: { $filter: { input: '$items', as: 'it', cond: { $eq: ['$$it.avgRating', '$maxAvg'] } } }
         }
-      }
-    },
-    { $unwind: "$results" },
-    { $replaceRoot: { newRoot: "$results" } }
-  ]).toArray();
+      },
+      { $unwind: '$results' },
+      { $replaceRoot: { newRoot: '$results' } }
+    ])
+    .toArray();
 };
 
-//Updated lowest rated courses
 const getLowestRatedCourses = async () => {
   const coursesCollection = await courses();
-  return await coursesCollection.aggregate([
-    {
-      $project: {
-        courseId: 1,
-        avgRating: {
-          $avg: {
-            $map: {
-              input: {
-                $filter: {
-                  input: { $ifNull: ["$ratings", []] },
-                  as: "r",
-                  cond: {
-                    $and: [
-                      { $gte: ["$$r.rating", 1] },
-                      { $lte: ["$$r.rating", 5] }
-                    ]
+  return await coursesCollection
+    .aggregate([
+      {
+        $project: {
+          courseId: 1,
+          avgRating: {
+            $avg: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ['$comments', []] },
+                    as: 'c',
+                    cond: {
+                      $and: [
+                        { $isNumber: '$$c.rating' },
+                        { $gte: ['$$c.rating', 1] },
+                        { $lte: ['$$c.rating', 5] }
+                      ]
+                    }
                   }
                 }
               },
-              as: "r",
-              in: "$$r.rating"
+              as: 'c',
+              in: '$$c.rating'
+            }
+          }
+        }
+      },
+      { $match: { avgRating: { $ne: null } } },
+      { $group: { _id: null, minAvg: { $min: '$avgRating' }, items: { $push: '$$ROOT' } } },
+      {
+        $project: {
+          _id: 0,
+          results: { $filter: { input: '$items', as: 'it', cond: { $eq: ['$$it.avgRating', '$minAvg'] } } }
+        }
+      },
+      { $unwind: '$results' },
+      { $replaceRoot: { newRoot: '$results' } }
+    ])
+    .toArray();
+};
+
+// Recalculate courseRating/ratingCount from comment ratings
+const recalcCourseRatingFromComments = async (courseId) => {
+  courseId = validation.validateString('courseId', courseId);
+  if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`;
+
+  const coursesCollection = await courses();
+
+  const agg = await coursesCollection
+    .aggregate([
+      { $match: { _id: new ObjectId(courseId) } },
+      {
+        $project: {
+          avgRating: {
+            $avg: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ['$comments', []] },
+                    as: 'c',
+                    cond: {
+                      $and: [
+                        { $isNumber: '$$c.rating' },
+                        { $gte: ['$$c.rating', 1] },
+                        { $lte: ['$$c.rating', 5] }
+                      ]
+                    }
+                  }
+                }
+              },
+              as: 'c',
+              in: '$$c.rating'
+            }
+          },
+          count: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$comments', []] },
+                as: 'c',
+                cond: {
+                  $and: [
+                    { $isNumber: '$$c.rating' },
+                    { $gte: ['$$c.rating', 1] },
+                    { $lte: ['$$c.rating', 5] }
+                  ]
+                }
+              }
             }
           }
         }
       }
-    },
-    { $match: { avgRating: { $ne: null } } },
-    {
-      $group: {
-        _id: null,
-        minAvg: { $min: "$avgRating" },
-        items: { $push: { courseId: "$courseId", avgRating: "$avgRating" } }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        results: {
-          $filter: {
-            input: "$items",
-            as: "it",
-            cond: { $eq: ["$$it.avgRating", "$minAvg"] }
-          }
-        }
-      }
-    },
-    { $unwind: "$results" },
-    { $replaceRoot: { newRoot: "$results" } }
-  ]).toArray();
+    ])
+    .toArray();
+
+  const avg = agg[0] && typeof agg[0].avgRating === 'number' ? agg[0].avgRating : null;
+  const cnt = agg[0] && typeof agg[0].count === 'number' ? agg[0].count : 0;
+
+  await coursesCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $set: { courseRating: avg, ratingCount: cnt } }
+  );
+
+  return { courseRating: avg, ratingCount: cnt };
 };
 
 //COMMENTS
@@ -375,6 +440,9 @@ const createComment = async (userId, courseId, text, rating = null) => {
   );
 
   if (updateInfo.modifiedCount === 0) throw "Could not add comment.";
+
+  if (rating !== null) await recalcCourseRatingFromComments(courseId);
+
   return newComment;
 };
 
@@ -386,18 +454,31 @@ const getCommentsByCourse = async (courseId) => {
 };
 
 //Update a comment's text
-const updateComment = async (courseId, commentId, newText) => {
+const updateComment = async (courseId, commentId, newText, newRating = undefined) => {
   courseId = validation.validateString("courseId", courseId);
   commentId = validation.validateString("commentId", commentId);
   newText = validation.validateString("newText", newText);
+  if (newRating !== undefined && newRating !== null) {
+	if (typeof newRating !== 'number' || newRating < 1 || newRating > 5) {
+		throw 'Rating must be a number between 1 and 5.';
+	}
+  }
+
+  const setDoc = {'comments.$.text': newText, 'comments.$.updatedAt': new Date()};
+  if (newRating !== undefined) {
+	setDoc['comments.$.rating'] = newRating;
+  }
 
   const coursesCollection = await courses();
   const updateInfo = await coursesCollection.updateOne(
     { _id: new ObjectId(courseId), "comments._id": new ObjectId(commentId) },
-    { $set: { "comments.$.text": newText, "comments.$.updatedAt": new Date() } }
+    { $set: setDoc}
   );
 
   if (updateInfo.modifiedCount === 0) throw "Could not update comment.";
+
+  if (newRating !== undefined) await recalcCourseRatingFromComments(courseId);
+
   return await getCommentsByCourse(courseId);
 };
 
@@ -436,6 +517,7 @@ const dislikeComment = async (courseId, commentId, userId) => {
   );
 
   if (updateInfo.modifiedCount === 0) throw "Could not dislike comment.";
+
   return await getCommentsByCourse(courseId);
 };
 
@@ -451,11 +533,15 @@ const deleteComment = async (courseId, commentId) => {
   );
 
   if (updateInfo.modifiedCount === 0) throw "Could not delete comment.";
+
+  await recalcCourseRatingFromComments(courseId);
+
   return { deleted: true };
 };
 
 //Course ratings calculation
 const recalcCourseRatingFromRatings = async (courseId) => {
+	//Not used by the comment-based flow anymore...keeping so existing callers won't break.
   courseId = validation.validateString("courseId", courseId);
   if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`;
 
@@ -584,7 +670,8 @@ export {
   //course-level ratings
   setCourseRating,
   removeCourseRating,
-  recalcCourseRatingFromRatings
-};
+  recalcCourseRatingFromRatings,
 
-//added documentation for comments, updated extra features functions, and added getHighestRatedCourses - SS
+  //comment-based rating (primary)
+  recalcCourseRatingFromComments
+};
