@@ -118,7 +118,18 @@ const hbsHelpers = {
   isAdmin: (user) => user && String(user.role).toLowerCase() === 'admin',
 };
 
-app.engine('handlebars', exphbs.engine({ defaultLayout: 'main' }));
+app.engine(
+  'handlebars', 
+  exphbs.engine({ 
+    defaultLayout: 'main', 
+    helpers: {
+      eq: (a, b) => a === b, 
+      fmt: (n) => (typeof n === 'number' ? n.toFixed(1) : n), 
+      isAdmin: (user) => user && user.role === 'admin',
+    } 
+  })
+);
+
 app.set('view engine', 'handlebars');
 
 app.listen(3000, () => {
