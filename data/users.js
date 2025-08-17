@@ -79,22 +79,16 @@ const removeUser = async (userId) => {
 
 const updateUser = async (userId, fieldsToUpdate) => {
 	if (!ObjectId.isValid(userId)) throw 'Invalid user ID';
-	firstName = validateName(firstName);
-	lastName = validateName(lastName);
-	username = validateString('Username', username);
-	password = validatePasswordInputs(password);
-	bio = validateString('Bio', bio);
-	imgLink = await validateImgLink(imgLink);
-	role = validateRole(role);
+
+	console.log(fieldsToUpdate)
 
 	const updateData = {};
-	const { firstName, lastName, password, bio, imgLink, role, lastViewed } = fieldsToUpdate;
-
+	const { firstName, lastName, bio, imgLink, role } = fieldsToUpdate;
 	if (firstName) updateData.firstName = validateName(firstName);
 	if (lastName) updateData.lastName = validateName(lastName);
 	if (password) updateData.password = validatePasswordInputs(password);
 	if (bio) updateData.bio = validateString(bio, 'Bio');
-	if (imgLink) updateData.imgLink = validateImgLink(imgLink);
+	if (imgLink) updateData.imgLink = await validateImgLink(imgLink);
 	if (role) updateData.role = validateRole(role);
 	if (lastViewed) updateData.lastViewed = validArrayOfObjectIds(lastViewed, 'Last Viewed IDs');
 
@@ -142,6 +136,9 @@ const loginUser = async (username, password) => {
 	username = validateString('username', username);
 	password = validateString('password', password);
 
+	console.log('in data functions' + username);
+	console.log(password);
+
 	// Gets the users collection.
 	const usersCollection = await users();
 
@@ -160,7 +157,10 @@ const loginUser = async (username, password) => {
 			firstName: user.firstName,
 			lastName: user.lastName,
 			username: user.username,
+			bio: user.bio,
+			imgLink: user.imgLink,
 			role: user.role,
+			lastViewed: user.lastViewed,
 		};
 	} else {
 		throw 'Error: Either the username or password is invalid.';
