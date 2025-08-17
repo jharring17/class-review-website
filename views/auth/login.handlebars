@@ -1,0 +1,15 @@
+{{!< layouts/main}}
+<h1>Login</h1>
+<div id="login-errors" class="error-box" hidden></div>
+
+<form id="login-form" method="POST" action="/login" novalidate>
+  <label for="username">Username</label>
+  <input id="username" name="username" type="text" autocomplete="username" />
+
+  <label for="password">Password</label>
+  <input id="password" name="password" type="password" autocomplete="current-password" />
+
+  <button type="submit">Login</button>
+</form>
+
+<script type="module" src="/public/js/login.js"></script>
