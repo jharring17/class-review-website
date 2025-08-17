@@ -10,6 +10,11 @@
 					<th scope="col">Course Name</th>
 					<th scope="col">Professor</th>
 					<th scope="col">Rating</th>
+
+					{{!-- Only show admin actions column if logged in user is admin --}}
+					{{#if (eq../user.role 'admin')}}
+						<th scope="col">Admin Actions</th>
+					{{/if}}
 				</tr>
 			</thead>
 			<tbody>
@@ -29,11 +34,27 @@
 						<td>
 							<span class="badge bg-primary">{{this.courseRating}}</span>
 						</td>
+
+						{{!-- Only show edit/delete if user is admin --}}
+						{{#if (eq.../user.role 'admin')}}
+							<td>
+								<a href="/courses/edit/{{this._id}}" class="btn btn-sm btn-warning">Edit</a>
+								<a href="/courses/delete/{{this._id}}" class="btn btn-sm btn-danger">Delete</a>
+							</td>
+						{{/if}}
 					</tr>
 				{{/each}}
 			</tbody>
 		</table>
 	</div>
+
+	{{!-- Show "add course" button only for admins --}}
+	{{#if (eq user.role 'admin')}}
+		<div class="mt-3">
+			<a href="/courses/create" class="btn btn-success">Add New Course</a>
+		</div>
+	{{/if}}
+	
 {{else}}
 	<div class="alert alert-warning" role="alert">
 		No courses found.

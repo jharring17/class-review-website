@@ -33,11 +33,19 @@
 							class='nav-link'
 							href='/courses/search'
 						>Search</a></li>
+
+                    {{!-- admin-only links --}}
+                    {{#if isAdmin}}
+                        <li class='nav-item active'>
+                            <a class='nav-link' href='/courses/new'>Create Course</a>
+                        </li>
+                    {{/if}}
+                    {{!-- end block for admin-only links --}}
+
 					{{#if user}}
-						<li class='nav-item active'><a
-								class='nav-link'
-								href='/logout'
-							>Logout</a></li>
+						<li class='nav-item active'>
+                            <a class='nav-link' href='/logout'>Logout</a>
+                        </li>
 					{{else}}
 						<li class='nav-item active'><a class='nav-link' href='/login'>Login</a></li>
 						<li class='nav-item active'><a

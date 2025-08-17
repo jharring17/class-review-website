@@ -1,3 +1,25 @@
 <h2>{{course.courseId}}: {{course.courseName}}</h2>
 <p>{{course.courseDescription}}</p>
 <p>{{course.professor}}</p>
+
+{{!-- Show course rating if available --}}
+<p>
+    <strong>Rating:</strong>
+    {{#if course.courseRating}}
+        {{course.courseRating}} ({{course.ratingCount}} reviews)
+    {{else}}
+        No ratings yet.
+    {{/if}}
+</p>
+
+{{!-- admin-only actions --}}
+{{#if user}}
+    {{#if (eq user.role "admin")}}
+        <div class="admin-actions mt-3">
+            <a href="/courses/{{course._id}}/edit" class="btn btn-warning btn-sm">Edit Course</a>
+            <form action="/courses/{{course._id}}/delete" method="POST" style="display:inline;">
+                <button type="submit" class="butn btn-danger btn-sm">Delete Course</button>
+            </form>
+        </div>
+    {{/if}}
+{{/if}}
