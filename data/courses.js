@@ -8,7 +8,6 @@ import * as validation from '../utils/validation.js'
  * @param {string} courseId A unique identifier applied to a course (ex: cs546)
  * @param {string} courseName The name of the course.
  * @param {string} courseDescription The description of the course.
- * @param {Date} meetingTime A date when the course meets.
  * @param {string} imgLink An image link used for a picture in the course.
  * @param {string} professor The name of the professor teaching the course. 
  * @returns {object} Object containing the new course
@@ -93,9 +92,13 @@ const getCourseById = async (courseId) => {
 	courseId = validation.validateString("courseId", courseId)
 	if (!ObjectId.isValid(courseId)) throw `Error: ${courseId} is invalid.`
 	
+  console.log("COURSEID " + courseId)
+
 	// Find the course
 	const coursesCollection = await courses();
+
 	const courseById = await coursesCollection.findOne({ _id: new ObjectId(courseId) })
+  console.log("courseById" + courseById)
 	if (!courseById) throw `Error: no course found with ID ${courseId}.`
 	courseById._id = courseById._id.toString()
 	return courseById

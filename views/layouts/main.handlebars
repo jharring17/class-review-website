@@ -31,11 +31,11 @@
 						>Stats</a></li>
 					<li class='nav-item active'><a
 							class='nav-link'
-							href='/courses/allCourses'
+							href='/course/allCourses'
 						>Courses</a></li>
 					<li class='nav-item active'><a
 							class='nav-link'
-							href='/courses/search'
+							href='/course/search'
 						>Search</a></li>
 					{{#if user}}
 						<li class='nav-item active'><a
@@ -46,7 +46,7 @@
 								class='nav-link'
 								href='/user/{{user._id}}'
 							>Profile</a></li>
-						
+
 					{{else}}
 						<li class='nav-item active'><a class='nav-link' href='/login'>Login</a></li>
 						<li class='nav-item active'><a

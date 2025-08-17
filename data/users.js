@@ -1,5 +1,3 @@
-// this file contains methods for the users collection
-
 import {
 	validateString,
 	validUrl,
@@ -79,18 +77,26 @@ const removeUser = async (userId) => {
 
 const updateUser = async (userId, fieldsToUpdate) => {
 	if (!ObjectId.isValid(userId)) throw 'Invalid user ID';
-
-	console.log(fieldsToUpdate)
-
 	const updateData = {};
-	const { firstName, lastName, bio, imgLink, role } = fieldsToUpdate;
+	const { firstName, lastName, username, password, bio, imgLink, role } = fieldsToUpdate;
 	if (firstName) updateData.firstName = validateName(firstName);
 	if (lastName) updateData.lastName = validateName(lastName);
-	if (password) updateData.password = validatePasswordInputs(password);
-	if (bio) updateData.bio = validateString(bio, 'Bio');
+	if (username) {
+		updateData.username = validateString('Username', username);
+		const usersCollection = await users();
+		const existingUser = await usersCollection.findOne({ username: username.toLowerCase() });
+		if (existingUser && existingUser._id.toString() !== userId) {
+			throw 'Username already exists';
+		}
+		updateData.username = username.toLowerCase();
+	}
+	if (password) {
+		updateData.password = validatePasswordInputs(password);
+		updateData.password = await bcrypt.hash(updateData.password, 10);
+	}
+	if (bio) updateData.bio = validateString('bio', bio);
 	if (imgLink) updateData.imgLink = await validateImgLink(imgLink);
 	if (role) updateData.role = validateRole(role);
-	if (lastViewed) updateData.lastViewed = validArrayOfObjectIds(lastViewed, 'Last Viewed IDs');
 
 	updateData.updatedAt = new Date();
 

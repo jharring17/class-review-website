@@ -128,7 +128,8 @@ router.get('/page', async (req, res) => {
       mostReviewed: normalize(mostReviewed),
       leastReviewed: normalize(leastReviewed),
       highestRated: normalize(highestRated),
-      lowestRated: normalize(lowestRated)
+      lowestRated: normalize(lowestRated),
+      user: req.session.user
     });
   } catch (e) {
     console.error('Render /stats/page error:', e);
