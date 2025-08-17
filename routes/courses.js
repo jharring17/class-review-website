@@ -75,6 +75,7 @@ router.get('/allCourses', async (req, res) => {
 
 // GET /courses/search
 router.get('/search', (req, res) => {
+  console.log('GET /courses/search', req.query);
   const q = (req.query.q || '').trim();
   if (q) return res.redirect(`/courses/search/results?q=${encodeURIComponent(q)}`);
   return res.render('courses/search', { title: 'Search Courses' });
@@ -89,6 +90,7 @@ router.post('/search', (req, res) => {
 
 //GET /courses/search/results
 router.get('/search/results', async (req, res) => {
+  console.log('GET /courses/search/results', req.query);
   try {
     const qRaw = (req.query.q || '').trim();
     const q = qRaw.length > 64 ? qRaw.slice(0, 64) : qRaw;
