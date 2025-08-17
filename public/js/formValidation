@@ -1,0 +1,29 @@
+// public/js/formValidation.js
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('login-form');
+  if (!form) return;
+
+  const errBox = document.getElementById('login-errors');
+
+  form.addEventListener('submit', (e) => {
+    const errs = [];
+    const u = (form.username?.value || '').trim();
+    const p = (form.password?.value || '').trim();
+
+    if (!u) errs.push('Username is required');
+    if (!/^[a-z0-9_]{3,25}$/i.test(u)) errs.push('Username must be 3–25 letters/numbers/_');
+    if (!p) errs.push('Password is required');
+    if (p.length < 8) errs.push('Password must be at least 8 characters');
+
+    if (errs.length) {
+      e.preventDefault();
+      if (errBox) {
+        errBox.hidden = false;
+        errBox.innerHTML = `<ul>${errs.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+      } else {
+        alert(errs.join('\n'));
+      }
+    }
+  });
+});
