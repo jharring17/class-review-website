@@ -1,102 +1,147 @@
 // routes/users.js
 import express from 'express';
-import {
-  createUser,
-  getAllUsers,
-  getUserById,
-  updateUser,
-  removeUser,
-  addViewedClass,
-  loginUser
-} from '../data/users.js';
-import { requireAuth, requireSelfParam } from '../middleware/auth.js';
+import { createUser, getUserById, updateUser, loginUser } from '../data/users.js';
+import { requireAuth } from '../middleware/auth.js';
+import * as validation from '../utils/validation.js';
 
 const router = express.Router();
 
-/** GET /users */
-router.get('/', async (_req, res) => {
-  try {
-    const users = await getAllUsers();
-    res.json(users);
-  } catch (e) {
-    res.status(500).json({ error: e?.toString?.() || 'Internal error' });
-  }
+// Get the user dashboard if they are logged in.
+router.get('/userDashboard', async (req, res) => {
+	// If the user is logged in, render dashboard, else redirect to login
+	try {
+		console.log(req.session.user);
+		if (!req.session.user) {
+			console.log('User not logged in, redirecting to login page');
+			return res.status(403).redirect('/login');
+		} else {
+			res.status(200).render('userDashboard', { title: 'Dashboard', user: req.session.user });
+		}
+	} catch (e) {
+		res.status(401).json({ error: e?.toString?.() || 'Invalid credentials' });
+	}
 });
 
-/** GET /users/:id */
+// Get the user profile
 router.get('/:id', async (req, res) => {
-  try {
-    const user = await getUserById(req.params.id);
-    res.json(user);
-  } catch (e) {
-    res.status(404).json({ error: e?.toString?.() || 'User not found' });
-  }
+	try {
+		let userId = req.params.id;
+
+		// prevent another user from accessing userProfile
+		if (!req.session.user || req.session.user._id !== userId) {
+			return res.status(403).redirect('/');
+		} else {
+			// get the user details and render the profile
+			const user = await getUserById(req.params.id);
+			res.status(200).render('userProfile', { user });
+		}
+	} catch (e) {
+		res.status(404).json({ error: e?.toString?.() || 'User not found' });
+	}
 });
 
-/** POST /users (signup) */
-router.post('/', async (req, res) => {
-  try {
-    const created = await createUser(req.body);
-    res.status(201).json(created);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
+// Register a new user
+router.post('/register', async (req, res) => {
+	try {
+		const created = await createUser(req.body);
+		res.status(201).json(created);
+	} catch (e) {
+		res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
 });
 
-/** POST /users/login — sets req.session.user */
+// Login a user
 router.post('/login', async (req, res) => {
-  try {
-    const user = await loginUser(req.body.username, req.body.password);
-    // keep only essentials in the session
-    req.session.user = {
-      _id: String(user._id),
-      role: user.role || 'user',
-      username: user.username
-    };
-    res.json({ ok: true, user: req.session.user });
-  } catch (e) {
-    res.status(401).json({ error: e?.toString?.() || 'Invalid credentials' });
-  }
+	try {
+		const user = await loginUser(req.body.username, req.body.password);
+		req.session.user = user;
+		res.status(200).redirect('/user/userDashboard');
+	} catch (e) {
+		res.status(401).json({ error: e?.toString?.() || 'Invalid credentials' });
+	}
 });
 
-/** GET /users/logout */
+// logout the user
 router.get('/logout', (req, res) => {
-  req.session.destroy(() => res.json({ ok: true }));
+	req.session.destroy(() => res.json({ ok: true }));
 });
 
-/** PUT /users/:id — self only */
-router.put('/:id', requireAuth, requireSelfParam('id'), async (req, res) => {
-  try {
-    const updated = await updateUser(req.params.id, req.body);
-    res.json(updated);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
+// render the update page for user profile
+router.get('/editProfile/:id', requireAuth, async (req, res) => {
+	try {
+		// prevent users from updating other accounts if not logged in
+		if (!req.session.user) {
+			console.log('User not authorized to edit this profile');
+			return res.status(403).redirect('/');
+		}
+
+		// render the edit profile page
+		res.status(200).render('userEditProfile', { user: req.session.user });
+	} catch (e) {
+		console.log('Error rendering edit profile page:', e);
+		return res.status(500).redirect('/');
+	}
 });
 
-/** DELETE /users/:id — self only */
-router.delete('/:id', requireAuth, requireSelfParam('id'), async (req, res) => {
-  try {
-    const result = await removeUser(req.params.id);
-    if (req.session?.user?._id === req.params.id) {
-      req.session.destroy(() => {});
-    }
-    res.json(result);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
-});
+// update the user profile
+router.post('/editProfile/:id', requireAuth, async (req, res) => {
+	console.log('Editing profile for user:', req.params.id);
+	console.log(req.body);
 
-/** PATCH /users/:id/viewed — self only (optional feature) */
-router.patch('/:id/viewed', requireAuth, requireSelfParam('id'), async (req, res) => {
-  try {
-    const { courseId } = req.body;
-    const updatedUser = await addViewedClass(req.params.id, courseId);
-    res.json(updatedUser);
-  } catch (e) {
-    res.status(400).json({ error: e?.toString?.() || 'Bad request' });
-  }
+	//! add password as a field to the form. check the passwords here. use them to populate the new user field.
+
+	try {
+		// prevent users from updating other accounts if not logged in
+		if (!req.session.user || req.session.user._id !== req.params.id) {
+			console.log('User not authorized to edit this profile');
+			return res.status(403).redirect('/');
+		}
+
+		// validate all of the user fields
+		let { firstName, lastName, username, password, bio, imgLink, role } = req.body;
+		try {
+			firstName = validation.validateName(firstName);
+			lastName = validation.validateName(lastName);
+			username = validation.validateString('Username', username);
+			password = validation.validatePasswordInputs(password);
+			bio = validation.validateString('Bio', bio);
+			imgLink = await validation.validateImgLink(imgLink);
+			role = validateRole(role);
+		} catch (e) {
+			console.log(e);
+		}
+
+		// print all the fields
+		console.log('Editing user profile:', {
+			firstName,
+			lastName,
+			username,
+			password,
+			bio,
+			imgLink,
+			role,
+		});
+
+		// attempt to update the user with validated credentials
+		const updated = await updateUser(req.session.user._id, {
+			firstName: firstName,
+			lastName: lastName,
+			username: username,
+			// password: password,
+			bio: bio,
+			imgLink: imgLink,
+			role: role,
+		});
+		console.log('User updated successfully:', updated);
+
+		// update the user session to include new values
+		req.session.user = await getUserById(req.session.user._id);
+
+		// return 200 and redirect to user profile with updates
+		return res.status(200).redirect(`/user/${req.session.user._id}`);
+	} catch (e) {
+		res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
 });
 
 export default router;
-
