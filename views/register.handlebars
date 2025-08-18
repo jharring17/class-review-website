@@ -1,71 +1,48 @@
-<h2 class='mb-4'>Register</h2>
-<div class='card shadow-sm p-4'>
-	<form id='register-form' action='/user/register' method='POST'>
-		<div class='mb-3'>
-			<label for='firstName' class='form-label'>First Name</label>
-			<input type='text' class='form-control' id='firstName' name='firstName' required />
-		</div>
+<h1>Register</h1>
 
-		<div class='mb-3'>
-			<label for='lastName' class='form-label'>Last Name</label>
-			<input type='text' class='form-control' id='lastName' name='lastName' required />
-		</div>
+<form id="register-form" action="/register" method="POST">
+  <div>
+    <label for="firstName">First Name:</label>
+    <input type="text" name="firstName" id="firstName" required>
+  </div>
 
-		<div class='mb-3'>
-			<label for='username' class='form-label'>Username</label>
-			<input type='text' class='form-control' id='username' name='username' required />
-		</div>
+  <div>
+    <label for="lastName">Last Name:</label>
+    <input type="text" name="lastName" id="lastName" required>
+  </div>
 
-		<div class='mb-3'>
-			<label for='password' class='form-label'>Password</label>
-			<input type='password' class='form-control' id='password' name='password' required />
-		</div>
+  <div>
+    <label for="username">Username:</label>
+    <input type="text" name="username" id="username" required>
+  </div>
 
-		<div class='mb-3'>
-			<label for='confirmPassword' class='form-label'>Confirm Password</label>
-			<input
-				type='password'
-				class='form-control'
-				id='confirmPassword'
-				name='confirmPassword'
-				required
-			/>
-		</div>
+  <div>
+    <label for="password">Password:</label>
+    <input type="password" name="password" id="password" required>
+  </div>
 
-		<div class='mb-3'>
-			<label for='role' class='form-label'>Role</label>
-			<select class='form-select' id='role' name='role' required>
-				<option value='' selected disabled>Select a role</option>
-				<option value='student'>Student</option>
-				<option value='admin'>Admin</option>
-			</select>
-		</div>
+  <div>
+    <label for="confirmPassword">Confirm Password:</label>
+    <input type="password" name="confirmPassword" id="confirmPassword" required>
+  </div>
 
-		<div class='mb-3'>
-			<label for='bio' class='form-label'>Bio</label>
-			<textarea
-				class='form-control'
-				id='bio'
-				name='bio'
-				rows='4'
-				placeholder='Tell us about yourself...'
-			></textarea>
-		</div>
+  <div>
+    <label for="role">Role (user or superuser):</label>
+    <input type="text" name="role" id="role">
+  </div>
 
-		<div class='mb-3'>
-			<label for='imgLink' class='form-label'>Image Link</label>
-			<input
-				type='url'
-				class='form-control'
-				id='imgLink'
-				name='imgLink'
-				placeholder='https://example.com/profile.jpg'
-			/>
-		</div>
+  <div>
+    <label for="bio">Bio (optional, max 300 chars):</label>
+    <textarea name="bio" id="bio" maxlength="300"></textarea>
+  </div>
 
-		<div class='d-flex justify-content-between'>
-			<a href='/' class='btn btn-outline-secondary'>Cancel</a>
-			<button type='submit' class='btn btn-success'>Register</button>
-		</div>
-	</form>
-</div>
+  <div>
+    <label for="imgLink">Profile Image Link (optional):</label>
+    <input type="url" name="imgLink" id="imgLink" placeholder="http://example.com/image.jpg">
+  </div>
+
+  <button type="submit">Register</button>
+</form>
+
+<!-- Attach client-side validation -->
+<script src="/js/register.js"></script>
