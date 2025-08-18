@@ -87,8 +87,48 @@ router.post('/createCourse', requireAuth, requireRole('admin'), async (req, res)
 // get the page to update a course
 router.get('/editCourse/:id', async (req, res) => {
 	// Render the course creation form
-  console.log(req.params.id)
-	res.status(200).render('editCourse', { title: 'Edit Course', user: req.session.user, courseId: req.params.id });
+	console.log(req.params.id);
+	res.status(200).render('editCourse', {
+		title: 'Edit Course',
+		user: req.session.user,
+		courseId: req.params.id,
+	});
+});
+
+// update the course
+router.post('/editCourse/:id', async (req, res) => {
+	console.log(req.body)
+	let { courseId, courseName, courseDescription, imgLink, professor } = req.body;
+
+	// validate the inputs
+	try {
+		courseId = validation.validateCourseId(courseId);
+		courseName = validation.validateCourseName(courseName);
+		courseDescription = validation.validateCourseDescription(courseDescription);
+		imgLink = await validation.validateImgLink(imgLink);
+		professor = validation.validateProfessor(professor);
+	} catch (e) {
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
+
+	console.log("validated the inputs")
+
+	// update a course
+	try {
+		const updated = await updateCourse(
+			req.params.id,
+			req.session.user._id, // adminId from session
+			courseId,
+			courseName,
+			courseDescription,
+			imgLink,
+			professor
+		);
+		console.log('Course created:', updated);
+		res.status(201).redirect(`/course/${req.params.id}`);
+	} catch (e) {
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
 });
 
 /* =========================
