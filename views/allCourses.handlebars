@@ -1,9 +1,18 @@
-<h2 class="mb-4">All Courses</h2>
+<h2 class='mb-4'>All Courses</h2>
+
+{{#if user.isAdmin}}
+	<div class='mb-3 text-end'>
+		<a href='/course/createCourse' class='btn btn-success'>
+			<i class='bi bi-plus-circle'></i>
+			Create Course
+		</a>
+	</div>
+{{/if}}
 
 {{#if items.length}}
-	<div class="table-responsive">
-		<table class="table table-hover align-middle">
-			<thead class="table-dark">
+	<div class='table-responsive'>
+		<table class='table table-hover align-middle'>
+			<thead class='table-dark'>
 				<tr>
 					<th scope="col">Image</th>
 					<th scope="col">Course ID</th>
@@ -19,20 +28,20 @@
 			</thead>
 			<tbody>
 				{{#each items}}
-					<tr onclick="window.location='/course/{{this._id}}'" style="cursor:pointer;">
+					<tr onclick="window.location='/course/{{this._id}}'" style='cursor:pointer;'>
 						<td>
-							<img 
-								src="{{this.imgLink}}" 
-								alt="Course image for {{this.courseId}}" 
-								class="img-fluid rounded" 
-								style="max-width: 60px; height: auto;" 
+							<img
+								src='{{this.imgLink}}'
+								alt='Course image for {{this.courseId}}'
+								class='img-fluid rounded'
+								style='max-width: 60px; height: auto;'
 							/>
 						</td>
 						<td>{{this.courseId}}</td>
 						<td>{{this.courseName}}</td>
 						<td>{{this.professor}}</td>
 						<td>
-							<span class="badge bg-primary">{{this.courseRating}}</span>
+							<span class='badge bg-primary'>{{this.courseRating}}</span>
 						</td>
 
 						{{!-- Only show edit/delete if user is admin --}}
@@ -56,7 +65,7 @@
 	{{/if}}
 	
 {{else}}
-	<div class="alert alert-warning" role="alert">
+	<div class='alert alert-warning' role='alert'>
 		No courses found.
 	</div>
 {{/if}}

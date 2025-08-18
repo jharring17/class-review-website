@@ -8,18 +8,18 @@ router.get('/', (req, res) => {
 
 // Render the register page
 router.get('/register', (req, res) => {
-	res.status(200).render('register');
+	res.status(200).render('register', {title: 'Register', user: req.session.user});
 });
 
 // Render the login page
 router.get('/login', (req, res) => {
-	res.status(200).render('login');
+	res.status(200).render('login', { user: req.session.user });
 });
 
 // Logout the user and render the home page
 router.route('/logout').get(async (req, res) => {
 	req.session.destroy();
-	return res.render('home', { title: 'Home' });
+	return res.render('home', { title: 'Home'});
 });
 
 // Render the error page

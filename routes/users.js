@@ -42,11 +42,60 @@ router.get('/:id', async (req, res) => {
 
 // Register a new user
 router.post('/register', async (req, res) => {
+	// validate all of the user fields
+	let { firstName, lastName, username, password, confirmPassword, bio, imgLink, role } = req.body;
+
+	// validate the user fields
 	try {
-		const created = await createUser(req.body);
-		res.status(201).json(created);
+		// check if passwords match
+		if (password !== confirmPassword) {
+			throw 'Error: Passwords do not match.';
+		}
+
+		// do not allow users to register with an existing username
+		const existingUser = await getUserById(username.toLowerCase());
+		if (existingUser) {
+			return res
+				.status(400)
+				.json({ error: 'Username already exists. Please choose a different one.' });
+		}
+
+		// validate the user fields
+		firstName = validation.validateName(firstName);
+		lastName = validation.validateName(lastName);
+		username = validation.validateString('Username', username);
+		password = validation.validatePasswordInputs(password);
+		bio = validation.validateString('Bio', bio);
+		imgLink = await validation.validateImgLink(imgLink);
+		role = validation.validateRole(role);
 	} catch (e) {
-		res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+		console.log(e);
+	}
+
+	// attempt to create the user with validated credentials
+	try {
+		const newUser = {
+			firstName: firstName,
+			lastName: lastName,
+			username: username.toLowerCase(),
+			password: password,
+			bio: bio,
+			imgLink: imgLink,
+			role: role,
+		};
+		await createUser(
+			newUser.firstName,
+			newUser.lastName,
+			newUser.username,
+			newUser.password,
+			newUser.bio,
+			newUser.imgLink,
+			newUser.role
+		);
+		return res.status(200).redirect('/login');
+	} catch (e) {
+		console.log('Error creating user:', e);
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
 	}
 });
 
@@ -54,7 +103,16 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
 	try {
 		const user = await loginUser(req.body.username, req.body.password);
+
+		// If login is successful, set user session
 		req.session.user = user;
+
+		// set isAdmin session variable for handlebars
+		if (req.session.user.role === 'admin') {
+			req.session.user.isAdmin = true;
+		} else {
+			req.session.user.isAdmin = false;
+		}
 		res.status(200).redirect('/user/userDashboard');
 	} catch (e) {
 		res.status(401).json({ error: e?.toString?.() || 'Invalid credentials' });
@@ -85,49 +143,53 @@ router.get('/editProfile/:id', requireAuth, async (req, res) => {
 
 // update the user profile
 router.post('/editProfile/:id', requireAuth, async (req, res) => {
-	console.log('Editing profile for user:', req.params.id);
-	console.log(req.body);
+	// prevent users from updating other accounts if not logged in
+	if (!req.session.user || req.session.user._id !== req.params.id) {
+		console.log('User not authorized to edit this profile');
+		return res.status(403).redirect('/');
+	}
 
-	//! add password as a field to the form. check the passwords here. use them to populate the new user field.
+	// validate all of the user fields
+	let { firstName, lastName, username, password, confirmPassword, bio, imgLink, role } = req.body;
 
+	// validate the user fields
 	try {
-		// prevent users from updating other accounts if not logged in
-		if (!req.session.user || req.session.user._id !== req.params.id) {
-			console.log('User not authorized to edit this profile');
-			return res.status(403).redirect('/');
+		// check if passwords match
+		if (password !== confirmPassword) {
+			throw 'Error: Passwords do not match.';
 		}
 
-		// validate all of the user fields
-		let { firstName, lastName, username, password, bio, imgLink, role } = req.body;
-		try {
-			firstName = validation.validateName(firstName);
-			lastName = validation.validateName(lastName);
-			username = validation.validateString('Username', username);
-			password = validation.validatePasswordInputs(password);
-			bio = validation.validateString('Bio', bio);
-			imgLink = await validation.validateImgLink(imgLink);
-			role = validateRole(role);
-		} catch (e) {
-			console.log(e);
+		// do not allow users update to an existing username
+		const existingUser = await getUserById(req.session.user._id);
+		if (existingUser.username.toLowerCase() !== username.toLowerCase()) {
+			const userWithSameUsername = await getUserById(username.toLowerCase());
+			if (userWithSameUsername) {
+				return res
+					.status(400)
+					.json({ error: 'Username already exists. Please choose a different one.' });
+			}
 		}
 
-		// print all the fields
-		console.log('Editing user profile:', {
-			firstName,
-			lastName,
-			username,
-			password,
-			bio,
-			imgLink,
-			role,
-		});
+		// validate the user fields
+		firstName = validation.validateName(firstName);
+		lastName = validation.validateName(lastName);
+		username = validation.validateString('Username', username);
+		password = validation.validatePasswordInputs(password);
+		bio = validation.validateString('Bio', bio);
+		imgLink = await validation.validateImgLink(imgLink);
+		role = validation.validateRole(role);
+	} catch (e) {
+		console.log(e);
+	}
 
+	// Update the user with the validated credentials
+	try {
 		// attempt to update the user with validated credentials
 		const updated = await updateUser(req.session.user._id, {
 			firstName: firstName,
 			lastName: lastName,
 			username: username,
-			// password: password,
+			password: password,
 			bio: bio,
 			imgLink: imgLink,
 			role: role,
@@ -140,7 +202,8 @@ router.post('/editProfile/:id', requireAuth, async (req, res) => {
 		// return 200 and redirect to user profile with updates
 		return res.status(200).redirect(`/user/${req.session.user._id}`);
 	} catch (e) {
-		res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+		console.log('Error updating user:', e);
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
 	}
 });
 
