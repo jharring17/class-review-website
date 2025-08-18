@@ -1,42 +1,57 @@
-<div class="container py-5">
-		<div class="row justify-content-center">
-			<div class="col-md-8 col-lg-6">
-				<div class="card shadow-lg rounded-4">
-					<div class="card-body text-center p-4">
-						<!-- Profile Picture -->
-						<img src="{{user.imgLink}}" alt="{{user.username}}'s profile picture"
-							class="rounded-circle mb-3"
-							style="width: 120px; height: 120px; object-fit: cover;">
+<div class='container py-5'>
+	<div class='row justify-content-center'>
+		<div class='col-md-8 col-lg-6'>
+			<div class='card shadow-lg rounded-4'>
+				<div class='card-body text-center p-4'>
+					<!-- Profile Picture -->
+					<img
+						src='{{user.imgLink}}'
+						alt="{{user.username}}'s profile picture"
+						class='rounded-circle mb-3'
+						style='width: 120px; height: 120px; object-fit: cover;'
+					/>
 
-						<!-- Name & Role -->
-						<h2 class="card-title mb-1">{{user.firstName}} {{user.lastName}}</h2>
-						<h6 class="text-muted mb-3">@{{user.username}}</h6>
-						<span class="badge bg-primary mb-3">{{user.role}}</span>
+					<!-- Name & Role -->
+					<h2 class='card-title mb-1'>{{user.firstName}} {{user.lastName}}</h2>
+					<h6 class='text-muted mb-3'>@{{user.username}}</h6>
+					<span class='badge bg-primary mb-3'>{{user.role}}</span>
 
-						<!-- Bio -->
-						<p class="card-text mb-4">{{user.bio}}</p>
+					<!-- Bio -->
+					<p class='card-text mb-4'>{{user.bio}}</p>
 
-						<!-- Last Viewed Section -->
-						<div class="text-start">
-							<h5 class="mb-2">Last Viewed</h5>
-							{{#if user.lastViewed.length}}
-								<ul class="list-group list-group-flush">
-									{{#each user.lastViewed}}
-										<li class="list-group-item">{{this}}</li>
-									{{/each}}
-								</ul>
-							{{else}}
-								<p class="text-muted">No recently viewed items.</p>
-							{{/if}}
-						</div>
+					<!-- Last Viewed Section -->
+					<div class='text-start'>
+						<h5 class='mb-2'>Last Viewed</h5>
+						{{#if user.lastViewed.length}}
+							<ul class='list-group list-group-flush'>
+								{{#each user.lastViewed}}
+									<li class='list-group-item'>{{this}}</li>
+								{{/each}}
+							</ul>
+						{{else}}
+							<p class='text-muted'>No recently viewed items.</p>
+						{{/if}}
 					</div>
 				</div>
-				<!-- Optional back button -->
-				<div class="text-center mt-3">
-					<a href="/user/userDashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
-				</div>
-				<div>
-					<a href="/user/editProfile/{{user._id}}" class="btn btn-outline-secondary">Edit Profile</a>
-				</div>
+			</div>
+
+			<!-- Action Buttons -->
+			<div class='d-flex justify-content-center gap-3 mt-3'>
+				<a
+					href='/user/userDashboard'
+					class='btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3'
+				>
+					<i class='bi bi-arrow-left-circle'></i>
+					Back to Dashboard
+				</a>
+				<a
+					href='/user/editProfile/{{user._id}}'
+					class='btn btn-success d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3'
+				>
+					<i class='bi bi-pencil-square'></i>
+					Edit Profile
+				</a>
 			</div>
 		</div>
+	</div>
+</div>
