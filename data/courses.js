@@ -1,6 +1,6 @@
 import { courses } from '../config/mongoCollections.js';
 import { ObjectId } from 'mongodb';
-import * as validation from '../utils/validation.js'
+import * as validation from '../utils/validation.js';
 
 /**
  * Creates a new course in the courses collection.
