@@ -381,10 +381,4 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
   }
 });
 
-// Cancel handlers
-router.get('/cancel', (req, res) => {
-  // Redirect back to all courses or homepage
-  res.redirect('/course/allCourses');
-});
-
 export default router;
