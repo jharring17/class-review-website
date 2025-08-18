@@ -1,6 +1,26 @@
 <body>
-    {{#if user}}
-        <p>Hi {{user.firstName}}, welcome back!</p>
-    {{/if}}
-    <p class="tagline">Rate your courses, view student feedback, and more...</p>
+	{{#if user}}
+		<section class='welcome-section'>
+			<h1>Welcome back, {{user.firstName}}!</h1>
+			<p class='welcome-message'>
+				We're glad to see you again. Check out the latest feedback on your courses, rate
+				them, and see what other students are saying.
+			</p>
+		</section>
+	{{else}}
+		<section class='welcome-section'>
+			<h1>Welcome to CourseHub!</h1>
+			<p class='welcome-message'>
+				Sign up or log in to rate your courses, read student feedback, and track your
+				progress.
+			</p>
+		</section>
+	{{/if}}
+
+	<section class='tagline-section'>
+		<p class='tagline'>
+			Rate your courses, view student feedback, share your thoughts, and explore new learning
+			opportunities.
+		</p>
+	</section>
 </body>
