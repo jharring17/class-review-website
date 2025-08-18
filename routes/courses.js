@@ -107,48 +107,87 @@ router.post('/createCourse', requireAuth, requireRole('admin'), async (req, res)
 });
 
 // get the page to update a course
-router.get('/editCourse/:id', requireAuth, requireRole('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidId(id)) return res.status(400).render('error', { title: 'Error', error: 'Invalid course id' });
-
-    const course = await getCourseById(id);
-    return res.status(200).render('editCourse', {
-      title: 'Edit Course',
-      user: req.session.user,
-      courseId: id,
-      course
-    });
-  } catch (e) {
-    return res.status(404).render('error', { title: 'Error', error: 'Course not found' });
-  }
+router.get('/editCourse/:id', async (req, res) => {
+	// Render the course creation form
+	console.log(req.params.id);
+	res.status(200).render('editCourse', {
+		title: 'Edit Course',
+		user: req.session.user,
+		courseId: req.params.id,
+	});
 });
 
-router.post('/editCourse/:id', requireAuth, requireRole('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidId(id)) return res.status(400).render('error', { title: 'Error', error: 'Invalid course id' });
+// update the course
+router.post('/editCourse/:id', async (req, res) => {
+	console.log(req.body)
+	let { courseId, courseName, courseDescription, imgLink, professor } = req.body;
 
-    const { courseName, courseDescription, imgLink, professor } = req.body;
+	// validate the inputs
+	try {
+		courseId = validation.validateCourseId(courseId);
+		courseName = validation.validateCourseName(courseName);
+		courseDescription = validation.validateCourseDescription(courseDescription);
+		imgLink = await validation.validateImgLink(imgLink);
+		professor = validation.validateProfessor(professor);
+	} catch (e) {
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
 
-    const adminId = String(req.session.user._id);
-    const courseObjectId = String(id);
+	console.log("validated the inputs")
 
-    // Optional validate fields
-    const vName = validation.validateCourseName(courseName);
-    const vDesc = validation.validateCourseDescription(courseDescription);
-    const vImg = await validation.validateImgLink(imgLink);
-    const vProf = validation.validateProfessor(professor);
-
-    await updateCourse(adminId, courseObjectId, vName, vDesc, vImg, vProf);
-    return res.redirect(`/course/${id}`);
-  } catch (e) {
-    return res.status(400).render('error', { title: 'Error', error: e?.toString?.() || 'Bad request' });
-  }
+	// update a course
+	try {
+		const updated = await updateCourse(
+			req.params.id,
+			req.session.user._id, // adminId from session
+			courseId,
+			courseName,
+			courseDescription,
+			imgLink,
+			professor
+		);
+		console.log('Course created:', updated);
+		res.status(201).redirect(`/course/${req.params.id}`);
+	} catch (e) {
+		return res.status(400).json({ error: e?.toString?.() || 'Bad request' });
+	}
 });
 
-// Search pages
+/* =========================
+   Helpers
+========================= */
+const isValidId = (id) => ObjectId.isValid(String(id));
 
+const toPosInt = (val, def) => {
+	const n = Number(val);
+	return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
+};
+
+// escape for regex
+const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// DB-side search with paging
+async function findCoursesByQuery(q, page = 1, pageSize = 10) {
+	const col = await coursesCol();
+	const rx = new RegExp(esc(q), 'i');
+	const filter = { $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }] };
+
+	const total = await col.countDocuments(filter);
+	const items = await col
+		.find(filter)
+		.sort({ courseId: 1 })
+		.skip((page - 1) * pageSize)
+		.limit(pageSize)
+		.toArray();
+
+	return { total, items };
+}
+
+/* =========================
+   Pages / HTML routes (kept from main)
+========================= */
+
+// GET /courses/search (render form)
 router.get('/search', (req, res) => {
   const q = (req.query.q || '').trim();
   if (q) return res.redirect(`/course/search/results?q=${encodeURIComponent(q)}`);

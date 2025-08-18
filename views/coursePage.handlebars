@@ -1,7 +1,13 @@
 {{#if user.userCreated}}
-<div>
-	<a href='/course/editCourse/{{course._id}}' class='btn btn-outline-secondary'>Edit Course</a>
-</div>
+	<div class='mb-3 text-end'>
+		<a
+			href='/course/editCourse/{{course._id}}'
+			class='btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm rounded-pill px-3'
+		>
+			<i class='bi bi-pencil-square'></i>
+			Edit Course
+		</a>
+	</div>
 {{/if}}
 <h2>{{course.courseId}}: {{course.courseName}}</h2>
 <p>{{course.courseDescription}}</p>
