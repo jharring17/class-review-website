@@ -1,4 +1,3 @@
-// routes/courses.js
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import {
@@ -14,16 +13,14 @@ import {
   likeComment,
   dislikeComment,
   deleteComment,
-} from '../data/courses.js'; // uses signatures in data layer :contentReference[oaicite:0]{index=0}
+} from '../data/courses.js';
 
 import { courses as coursesCol } from '../config/mongoCollections.js';
 import { requireAuth, requireRole, requireCommentOwner } from '../middleware/auth.js';
 
 const router = Router();
 
-/* =========================
-   Helpers
-========================= */
+// Helpers
 const isValidId = (id) => ObjectId.isValid(String(id));
 
 const toPosInt = (val, def) => {
@@ -31,7 +28,6 @@ const toPosInt = (val, def) => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 };
 
-// escape for regex
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // DB-side search with paging
@@ -51,12 +47,8 @@ async function findCoursesByQuery(q, page = 1, pageSize = 10) {
   return { total, items };
 }
 
-/* =========================
-   Pages / HTML routes (kept from main)
-========================= */
-
-// GET /courses/allCourses  (renders list)
-router.get('/allCourses', async (req, res) => {
+//PAGES / HTML routes
+router.get('/all', async (req, res) => {
   try {
     const page = toPosInt(req.query.page, 1);
     const pageSize = Math.min(50, toPosInt(req.query.pageSize, 10));
@@ -78,24 +70,19 @@ router.get('/allCourses', async (req, res) => {
   }
 });
 
-// GET /courses/search (render form)
 router.get('/search', (req, res) => {
-  console.log('GET /courses/search', req.query);
   const q = (req.query.q || '').trim();
-  if (q) return res.redirect(`/courses/search/results?q=${encodeURIComponent(q)}`);
+  if (q) return res.redirect(`/course/search/results?q=${encodeURIComponent(q)}`);
   return res.render('courses/search', { title: 'Search Courses' });
 });
 
-// POST /courses/search (redirect to results)
 router.post('/search', (req, res) => {
   const q = (req.body.q || '').trim();
-  const url = q ? `/courses/search/results?q=${encodeURIComponent(q)}` : '/courses/search';
+  const url = q ? `/course/search/results?q=${encodeURIComponent(q)}` : '/course/search';
   res.redirect(url);
 });
 
-// GET /courses/search/results (render results)
 router.get('/search/results', async (req, res) => {
-  console.log('GET /courses/search/results', req.query);
   try {
     const qRaw = (req.query.q || '').trim();
     const q = qRaw.length > 64 ? qRaw.slice(0, 64) : qRaw;
@@ -130,23 +117,20 @@ router.get('/search/results', async (req, res) => {
       hasPrev,
       hasNext,
       prevLink: hasPrev
-        ? `/courses/search/results?q=${encodeURIComponent(q)}&page=${page - 1}&pageSize=${pageSize}`
+        ? `/course/search/results?q=${encodeURIComponent(q)}&page=${page - 1}&pageSize=${pageSize}`
         : null,
       nextLink: hasNext
-        ? `/courses/search/results?q=${encodeURIComponent(q)}&page=${page + 1}&pageSize=${pageSize}`
+        ? `/course/search/results?q=${encodeURIComponent(q)}&page=${page + 1}&pageSize=${pageSize}`
         : null,
     });
   } catch (e) {
-    console.error('GET /courses/search/results error:', e);
     return res
       .status(500)
       .render('error', { title: 'Error', error: e?.toString?.() || 'Internal server error' });
   }
 });
 
-/* =========================
-   JSON API list
-========================= */
+//JSON API list
 router.get('/', async (req, res) => {
   try {
     const page = toPosInt(req.query.page, 1);
@@ -168,9 +152,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-/* =========================
-   Course page
-========================= */
+// Course page
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -186,10 +168,21 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/* =========================
-   Admin create/update/delete 
-========================= */
+// Constrain the :id route to ObjectIds
+router.get('/:id([0-9a-fA-F]{24})', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const course = await getCourseById(id);
+    return res.status(200).render('coursePage', {
+      title: `${course.courseId}: ${course.courseName}`,
+      course,
+    });
+  } catch (e) {
+    return res.status(404).json({ error: e?.toString?.() || 'Course not found' });
+  }
+});
 
+// Admin create/update/delete
 router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { adminId, courseId, courseName, courseDescription, imgLink, professor } = req.body;
@@ -210,7 +203,7 @@ router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
 
 router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
-    const { id } = req.params; // optional sanity check that body.courseId matches this id if you decide to.
+    const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid course id' });
 
     const { adminId, courseId, courseName, courseDescription, imgLink, professor } = req.body;
@@ -240,11 +233,7 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   }
 });
 
-/* =========================
-   Embedded comments 
-========================= */
-
-// list comments
+// Embedded comments 
 router.get('/:courseId/comments', async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -256,7 +245,6 @@ router.get('/:courseId/comments', async (req, res) => {
   }
 });
 
-// create comment — must be logged in; userId from session only
 router.post('/:courseId/comments', requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -272,7 +260,6 @@ router.post('/:courseId/comments', requireAuth, async (req, res) => {
   }
 });
 
-// update comment — owner only
 router.put('/:courseId/comments/:commentId', requireAuth, requireCommentOwner, async (req, res) => {
   try {
     const { courseId, commentId } = req.params;
@@ -287,7 +274,6 @@ router.put('/:courseId/comments/:commentId', requireAuth, requireCommentOwner, a
   }
 });
 
-// delete comment — owner only
 router.delete('/:courseId/comments/:commentId', requireAuth, requireCommentOwner, async (req, res) => {
   try {
     const { courseId, commentId } = req.params;
@@ -301,7 +287,6 @@ router.delete('/:courseId/comments/:commentId', requireAuth, requireCommentOwner
   }
 });
 
-// like/dislike — logged in; userId from session only
 router.post('/:courseId/comments/:commentId/like', requireAuth, async (req, res) => {
   try {
     const { courseId, commentId } = req.params;
@@ -331,5 +316,3 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
 });
 
 export default router;
-
-

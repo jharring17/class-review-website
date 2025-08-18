@@ -6,6 +6,11 @@ import { dirname } from 'path';
 import exphbs from 'express-handlebars';
 import configRoutes from './routes/index.js';
 import { setUserLocals } from './middleware/auth.js';
+import devRoutes from './routes/dev.js';         // <— add
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/dev', devRoutes);                            // <— add
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const staticDir = express.static(__dirname + '/public');

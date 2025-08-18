@@ -8,9 +8,9 @@ const constructorMethod = (app) => {
 	app.use('/', homeRoutes);
 
 	// Use the other routes
-	app.use('/courses', courseRoutes);
+	app.use('/course', courseRoutes);
 	app.use('/stats', statRoutes);
-	app.use('/users', userRoutes);
+	app.use('/user', userRoutes);
 
 	// If the route is not found, render the error page.
 	app.use('*', (req, res) => {
