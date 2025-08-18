@@ -154,36 +154,6 @@ router.post('/editCourse/:id', async (req, res) => {
 });
 
 /* =========================
-   Helpers
-========================= */
-const isValidId = (id) => ObjectId.isValid(String(id));
-
-const toPosInt = (val, def) => {
-	const n = Number(val);
-	return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
-};
-
-// escape for regex
-const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-// DB-side search with paging
-async function findCoursesByQuery(q, page = 1, pageSize = 10) {
-	const col = await coursesCol();
-	const rx = new RegExp(esc(q), 'i');
-	const filter = { $or: [{ courseId: rx }, { courseName: rx }, { professor: rx }] };
-
-	const total = await col.countDocuments(filter);
-	const items = await col
-		.find(filter)
-		.sort({ courseId: 1 })
-		.skip((page - 1) * pageSize)
-		.limit(pageSize)
-		.toArray();
-
-	return { total, items };
-}
-
-/* =========================
    Pages / HTML routes (kept from main)
 ========================= */
 
@@ -421,3 +391,4 @@ router.post('/:courseId/comments/:commentId/dislike', requireAuth, async (req, r
 });
 
 export default router;
+//can you check this for duplicates?

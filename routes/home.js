@@ -19,7 +19,7 @@ router.get('/login', (req, res) => {
 // Logout the user and render the home page
 router.route('/logout').get(async (req, res) => {
 	req.session.destroy();
-	return res.render('home', { title: 'Home'});
+	return res.redirect('/');
 });
 
 // Render the error page
