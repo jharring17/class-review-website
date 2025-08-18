@@ -12,3 +12,13 @@
 <h2>{{course.courseId}}: {{course.courseName}}</h2>
 <p>{{course.courseDescription}}</p>
 <p>{{course.professor}}</p>
+
+{{!-- Show course rating if available --}}
+<p>
+    <strong>Rating:</strong>
+    {{#if course.courseRating}}
+        {{course.courseRating}} ({{course.ratingCount}} reviews)
+    {{else}}
+        No ratings yet.
+    {{/if}}
+</p>
